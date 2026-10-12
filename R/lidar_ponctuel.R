@@ -7,7 +7,7 @@
 #' @param buffer Distance du buffer en mètres (défaut: 50)
 #' @param source Source des données: "auto" (défaut), "canelevation", ou "donneesquebec"
 #' @param dossier Dossier de sortie pour sauvegarder les fichiers (optionnel)
-#' @param métriques Logique. Si TRUE, calcule les métriques de hauteur
+#' @param metriques Logique. Si TRUE, calcule les métriques de hauteur
 #' @param annee Optionnel. Année spécifique à télécharger (ex: 2018). Si fourni, ignore `toutes_annees`.
 #' @param toutes_annees Logique. Si TRUE, télécharge toutes les années disponibles (données historiques de Données Québec) et retourne une liste nommée par année. Défaut: FALSE.
 #'
@@ -260,7 +260,7 @@ telecharger_copc_canelevation <- function(polygone_buffer, dossier = NULL) {
         message("  Tentative de téléchargement direct...")
         temp_copc <- tempfile(fileext = ".copc.laz")
         tryCatch({
-          download.file(url_copc, temp_copc, mode = "wb", quiet = TRUE)
+          utils::download.file(url_copc, temp_copc, mode = "wb", quiet = TRUE)
           las <- lidR::readLAS(temp_copc)
           unlink(temp_copc)
           return(las)
@@ -739,13 +739,13 @@ calculer_metriques_lidar <- function(las) {
     z_min = min(z, na.rm = TRUE),
     z_max = max(z, na.rm = TRUE),
     z_moy = mean(z, na.rm = TRUE),
-    z_median = median(z, na.rm = TRUE),
-    z_sd = sd(z, na.rm = TRUE),
-    z_p05 = quantile(z, 0.05, na.rm = TRUE),
-    z_p25 = quantile(z, 0.25, na.rm = TRUE),
-    z_p75 = quantile(z, 0.75, na.rm = TRUE),
-    z_p95 = quantile(z, 0.95, na.rm = TRUE),
-    z_iqr = IQR(z, na.rm = TRUE)
+    z_median = stats::median(z, na.rm = TRUE),
+    z_sd = stats::sd(z, na.rm = TRUE),
+    z_p05 = stats::quantile(z, 0.05, na.rm = TRUE),
+    z_p25 = stats::quantile(z, 0.25, na.rm = TRUE),
+    z_p75 = stats::quantile(z, 0.75, na.rm = TRUE),
+    z_p95 = stats::quantile(z, 0.95, na.rm = TRUE),
+    z_iqr = stats::IQR(z, na.rm = TRUE)
   )
   
   # Calculer la rugosité (écart-type local) si assez de points

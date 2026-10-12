@@ -194,7 +194,8 @@ extraire_covariables_complet <- function(
     tryCatch({
       # Extraire les sols avec le FGB
       message("\n--- Extraction des données pédologiques ---")
-      sols <- lire_pedologie(polygone_buffer_wgs84)
+      pedo <- telecharger_pedologie_quebec(polygone_buffer_wgs84)
+      sols <- if (!is.null(pedo)) pedo$polygones else NULL
 
       if (!is.null(sols) && nrow(sols) > 0) {
         # Transformer dans le CRS projeté
@@ -204,11 +205,10 @@ extraire_covariables_complet <- function(
         if (!is.null(resultats$terrain$mnt)) {
           message("\n--- Désagrégation des séries de sols ---")
 
-          # Préparer la table des séries (à adapter selon la structure des données)
-          # Par défaut, on utilise la fonction proba_serie avec les données disponibles
+          # Utiliser la table des séries fournie par telecharger_pedologie_quebec()
           desaggregation <- proba_et_classement_serie_quota_ilr(
             polygones_sf = sols_projete,
-            table_series = NULL,  # À définir selon les données
+            table_series = pedo$table_series,
             mnt = resultats$terrain$mnt,
             ...
           )
@@ -559,7 +559,7 @@ extraire_covariables_complet <- function(
       calculee = unlist(cov_calc),
       timing = sapply(names(cov_calc), function(n) resultats$timing[[n]] %||% NA)
     )
-    write.csv(resume, file.path(dossier, "resume_extraction.csv"), row.names = FALSE)
+    utils::write.csv(resume, file.path(dossier, "resume_extraction.csv"), row.names = FALSE)
 
     message("✓ Résultats sauvegardés")
   }
@@ -925,7 +925,7 @@ visualiser_covariables <- function(resultats, type = c("tous", "terrain", "ombra
     points_col <- cols[classes]
     points_col[is.na(points_col)] <- "black"
     plot(sf::st_geometry(resultats$arbres$trees_sf), col = points_col, pch = 19, cex = 0.5, add = TRUE)
-    legend("topright", legend = names(cols), col = cols, pch = 19)
+    graphics::legend("topright", legend = names(cols), col = cols, pch = 19)
   }
 
   if (type %in% c("distances", "tous") && !is.null(resultats$distances_vent)) {

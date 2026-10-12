@@ -23,7 +23,7 @@ telecharger_lidar_ponctuel(
 
 \item{dossier}{Dossier de sortie pour sauvegarder les fichiers (optionnel)}
 
-\item{métriques}{Logique. Si TRUE, calcule les métriques de hauteur}
+\item{metriques}{Logique. Si TRUE, calcule les métriques de hauteur}
 
 \item{annee}{Optionnel. Année spécifique à télécharger (ex: 2018). Si fourni, ignore `toutes_annees`.}
 

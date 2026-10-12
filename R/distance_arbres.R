@@ -220,7 +220,7 @@ simuler_vitesse_vent_simple <- function(dist_result,
 #'   \item simuler_vitesse_vent_fetch(): Simuler la vitesse du vent (fetch)
 #' }
 #'
-#' @name distance_arbres-package
+#' @name distance_arbres
 #' @examples
 #' \dontrun{
 #' # Distance simple

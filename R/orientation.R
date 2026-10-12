@@ -1,38 +1,20 @@
-#' Calculer l'orientation principale d'un champ
+#' Détecter le code EPSG UTM approprié pour un objet sf
 #'
-#' Calcule l'orientation principale (azimut) d'un champ agricole à partir de sa géométrie.
-#' Utilise la bounding box orientée ou les moments d'inertie pour déterminer l'angle principal.
+#' Calcule la zone UTM (nord ou sud) correspondant au centroïde d'un objet `sf`.
 #'
-#' @param polygone Un objet `sf` représentant le champ ou un chemin vers un fichier vectoriel
-#' @param methode Méthode de calcul: "mbr" (Minimum Bounding Rectangle, défaut) ou "pca" (analyse en composantes principales)
-#' @param unite Unité de sortie: "degres" (défaut) ou "radians"
-#' @param orientation Référence d'orientation: "geographique" (0=Nord, 90=Est, défaut) ou "mathematique" (0=Est, 90=Nord)
+#' @param sf_obj Un objet `sf` représentant la zone d'intérêt.
 #'
-#' @return Une liste contenant:
-#' \item{angle}{L'angle principal en degrés ou radians}
-#' \item{angle_perpendiculaire}{L'angle perpendiculaire (±90°)}
-#' \item{longueur}{La longueur selon l'axe principal}
-#' \item{largeur}{La largeur selon l'axe perpendiculaire}
-#' \item{rapport_aspect}{Le rapport longueur/largeur}
-#' \item{geometry}{La géométrie de la bounding box orientée}
-#'
+#' @return Le code EPSG (entier) de la zone UTM correspondante.
 #' @export
 #'
 #' @examples
 #' \dontrun{
 #' champ <- sf::st_read("champ.shp")
-#' orientation <- calculer_orientation_champ(champ)
-#' print(paste("Orientation principale:", round(orientation$angle, 1), "degrés"))
-#'
-#' # Avec visualisation
-#' plot(champ)
-#' plot(orientation$geometry, add = TRUE, border = "red", lwd = 2)
+#' epsg <- detecter_utm_epsg(champ)
 #' }
 #'
-#' @importFrom sf st_read st_crs st_transform st_bbox st_convex_hull st_coordinates st_as_sf st_union st_is_longlat st_centroid st_geometry st_cast st_linestring st_sfc st_sf st_polygon st_distance st_nearest_points
+#' @importFrom sf st_crs st_union st_convex_hull st_centroid st_transform st_coordinates
 #' @importFrom methods is
-
-# Détecter le code EPSG UTM approprié pour un objet sf
 detecter_utm_epsg <- function(sf_obj) {
   # Si pas de CRS, on assume WGS84 par défaut
   if (is.na(sf::st_crs(sf_obj))) {
@@ -56,7 +38,7 @@ detecter_utm_epsg <- function(sf_obj) {
   utm_zone <- floor((lon + 180) / 6) + 1
   epsg_code <- ifelse(lat >= 0, 32600 + utm_zone, 32700 + utm_zone)
   
-  return(epsg_code)
+  return(unname(as.numeric(epsg_code)))
 }
 
 #' Calculer l'orientation d'un champ
@@ -196,42 +178,41 @@ creer_geometrie_rect <- function(center, angle_math, longueur, largeur, crs) {
 #' @noRd
 calculer_mbr <- function(polygone) {
   # Obtenir les coordonnées
-  coords <- sf::st_coordinates(polygone)[, 1:2]
-  
+  coords <- sf::st_coordinates(polygone)[, 1:2, drop = FALSE]
+
+  # Le MBR d'un nuage de points ne dépend que de son enveloppe convexe.
+  # On la réduit pour accélérer nettement le calcul sur les polygones détaillés.
+  coords_hull <- tryCatch({
+    sf::st_coordinates(sf::st_convex_hull(polygone))[, 1:2, drop = FALSE]
+  }, error = function(e) coords)
+  if (is.null(coords_hull) || nrow(coords_hull) < 3) coords_hull <- coords
+
   # Calculer le centroïde des points pour centrer les calculs (stabilité numérique)
   centroid_pts <- colMeans(coords)
-  coords_centered <- coords - matrix(centroid_pts, nrow = nrow(coords), ncol = 2, byrow = TRUE)
-  
-  # Tester différents angles pour trouver le rectangle d'aire minimale
+  coords_centered <- coords_hull - matrix(centroid_pts, nrow = nrow(coords_hull), ncol = 2, byrow = TRUE)
+
+  # Tester différents angles pour trouver le rectangle d'aire minimale.
+  # Calcul vectorisé : on projette tous les points sur tous les axes en une fois.
   angles_test <- seq(0, 89.5, by = 0.5)
-  
-  meilleur_angle <- 0
-  meilleure_aire <- Inf
-  meilleures_dims <- c(0, 0)
-  meilleur_center_rot <- c(0, 0)
-  
-  for (angle in angles_test) {
-    # Rotation (mathématique)
-    angle_rad <- angle * pi / 180
-    # On utilise la transposée de la matrice de rotation pour tourner les points
-    # ou on définit la matrice pour une rotation anti-horaire
-    rot <- matrix(c(cos(angle_rad), sin(angle_rad), -sin(angle_rad), cos(angle_rad)), nrow = 2)
-    coords_rotated <- coords_centered %*% rot
-    
-    # Calculer les dimensions et le centre du rectangle dans l'espace tourné
-    r_x <- range(coords_rotated[, 1])
-    r_y <- range(coords_rotated[, 2])
-    x_range <- diff(r_x)
-    y_range <- diff(r_y)
-    aire <- x_range * y_range
-    
-    if (aire < meilleure_aire) {
-      meilleure_aire <- aire
-      meilleur_angle <- angle
-      meilleures_dims <- c(x_range, y_range)
-      meilleur_center_rot <- c(mean(r_x), mean(r_y))
-    }
-  }
+  angle_rad <- angles_test * pi / 180
+
+  # Colonne 1 de la rotation : x*cos + y*sin ; colonne 2 : -x*sin + y*cos
+  proj1 <- coords_centered %*% rbind(cos(angle_rad), sin(angle_rad))
+  proj2 <- coords_centered %*% rbind(-sin(angle_rad), cos(angle_rad))
+
+  r1min <- apply(proj1, 2, min); r1max <- apply(proj1, 2, max)
+  r2min <- apply(proj2, 2, min); r2max <- apply(proj2, 2, max)
+
+  x_range <- r1max - r1min
+  y_range <- r2max - r2min
+  aires <- x_range * y_range
+
+  idx_best <- which.min(aires)
+  meilleur_angle <- angles_test[idx_best]
+  meilleure_aire <- aires[idx_best]
+  meilleures_dims <- c(x_range[idx_best], y_range[idx_best])
+  meilleur_center_rot <- c((r1min[idx_best] + r1max[idx_best]) / 2,
+                           (r2min[idx_best] + r2max[idx_best]) / 2)
   
   # Déterminer l'axe principal (le plus long)
   if (meilleures_dims[1] >= meilleures_dims[2]) {
@@ -277,7 +258,7 @@ calculer_pca_orientation <- function(polygone) {
   coords_centered <- scale(coords, center = centroid_pts, scale = FALSE)
   
   # Calculer la matrice de covariance
-  cov_matrix <- cov(coords_centered)
+  cov_matrix <- stats::cov(coords_centered)
   
   # Décomposition en valeurs propres
   eigen_decomp <- eigen(cov_matrix)

@@ -89,13 +89,9 @@ proba_et_classement_serie_quota_ilr <- function(
   if (!requireNamespace("dplyr", quietly = TRUE)) stop("Installez 'dplyr'.")
   if (!requireNamespace("compositions", quietly = TRUE)) stop("Installez 'compositions'.")
 
-  library(terra)
-  library(sf)
-  library(dplyr)
-
   sim_scale <- match.arg(sim_scale)
 
-  if (!is.null(tempdir)) terraOptions(tempdir = tempdir)
+  if (!is.null(tempdir)) terra::terraOptions(tempdir = tempdir)
   tmp_tif <- function() tempfile(fileext = ".tif")
   wfile <- function() if (isTRUE(write_intermediate)) tmp_tif() else ""
 
@@ -229,7 +225,7 @@ proba_et_classement_serie_quota_ilr <- function(
     pb <- NULL
     if (isTRUE(progress)) {
       pb <- utils::txtProgressBar(min = 0, max = G, style = 3)
-      on.exit(try(utils::close(pb), silent = TRUE), add = TRUE)
+      on.exit(try(close(pb), silent = TRUE), add = TRUE)
     }
 
     for (g in seq_len(G)) {
@@ -276,7 +272,7 @@ proba_et_classement_serie_quota_ilr <- function(
   miss <- setdiff(needed, names(table_series))
   if (length(miss) > 0) stop("Colonnes manquantes dans table_series: ", paste(miss, collapse = ", "))
 
-  fact <- max(1L, as.integer(round(grid_m / mean(res(mnt)))))
+  fact <- max(1L, as.integer(round(grid_m / mean(terra::res(mnt)))))
   r <- terra::aggregate(mnt, fact = fact, fun = mean, na.rm = TRUE,
                         filename = wfile(), overwrite = TRUE)
 
@@ -286,7 +282,7 @@ proba_et_classement_serie_quota_ilr <- function(
   id_r <- terra::rasterize(terra::vect(polys), r, field = "id_int", touches = TRUE,
                            filename = wfile(), overwrite = TRUE)
 
-  code_to_idint <- setNames(polys$id_int, trimws(as.character(polys[[id_col]])))
+  code_to_idint <- stats::setNames(polys$id_int, trimws(as.character(polys[[id_col]])))
 
   tab <- data.frame(
     code  = trimws(as.character(table_series[[id_col]])),
@@ -324,15 +320,15 @@ proba_et_classement_serie_quota_ilr <- function(
   }
 
   tab <- tab |>
-    group_by(id_int) |>
-    mutate(poids = poids / sum(poids, na.rm = TRUE)) |>
-    ungroup()
+    dplyr::group_by(id_int) |>
+    dplyr::mutate(poids = poids / sum(poids, na.rm = TRUE)) |>
+    dplyr::ungroup()
 
   series_all <- sort(unique(tab$serie))
 
   tex_poly <- tab |>
-    group_by(id_int) |>
-    summarise(
+    dplyr::group_by(id_int) |>
+    dplyr::summarise(
       sable  = sum(poids * sable,  na.rm = TRUE),
       limon  = sum(poids * limon,  na.rm = TRUE),
       argile = sum(poids * argile, na.rm = TRUE),
@@ -351,7 +347,7 @@ proba_et_classement_serie_quota_ilr <- function(
   E_limon  <- rasterize_attr(tex_poly, "limon")
   E_argile <- rasterize_attr(tex_poly, "argile")
 
-  rad <- max(1L, as.integer(ceiling(3 * sigma_voisin / mean(res(r)))))
+  rad <- max(1L, as.integer(ceiling(3 * sigma_voisin / mean(terra::res(r)))))
   x <- seq(-rad, rad)
   sigma_px <- max(1, rad / 3)
   g <- exp(-(x^2) / (2 * sigma_px^2))
@@ -400,8 +396,8 @@ proba_et_classement_serie_quota_ilr <- function(
     finesse <- row$argile + 0.5 * row$limon
 
     base_poly <- sub |>
-      group_by(id_int) |>
-      summarise(poids = sum(poids, na.rm = TRUE), .groups = "drop")
+      dplyr::group_by(id_int) |>
+      dplyr::summarise(poids = sum(poids, na.rm = TRUE), .groups = "drop")
 
     polys3 <- polys
     polys3$val <- 0
@@ -431,8 +427,8 @@ proba_et_classement_serie_quota_ilr <- function(
   if (verbose) message("Computing ILR prototypes for series textures...")
 
   tex_series <- tab |>
-    group_by(serie) |>
-    summarise(
+    dplyr::group_by(serie) |>
+    dplyr::summarise(
       sable  = dplyr::first(sable[is.finite(sable)]),
       limon  = dplyr::first(limon[is.finite(limon)]),
       argile = dplyr::first(argile[is.finite(argile)]),
@@ -480,7 +476,7 @@ proba_et_classement_serie_quota_ilr <- function(
     dplyr::ungroup()
 
   w_by_id <- split(tab_q, tab_q$id_int)
-  serie_to_k <- setNames(seq_along(series), series)
+  serie_to_k <- stats::setNames(seq_along(series), series)
 
   stack_all <- c(id_r, D)
   V <- terra::values(stack_all, mat = TRUE)

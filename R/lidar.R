@@ -321,7 +321,7 @@ telecharger_lidar <- function(polygone, dossier = NULL, mne = FALSE, recent = TR
     vals_test <- terra::values(r_test)
     message("Test avec zone 100x100m au centre: ", sum(!is.na(vals_test)), " pixels non-NA")
     if (sum(!is.na(vals_test)) > 0) {
-      message("Valeurs dans la zone test: ", paste(head(vals_test[!is.na(vals_test)], 5), collapse = ", "))
+      message("Valeurs dans la zone test: ", paste(utils::head(vals_test[!is.na(vals_test)], 5), collapse = ", "))
     }
   }
 

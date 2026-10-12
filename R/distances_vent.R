@@ -164,7 +164,7 @@ fusionner_zones_vent <- function(zones_sf) {
       area_cumul <- sf::st_union(area_cumul, h_union)
     }
     
-    if (!sf::st_is_empty(h_disjoint)) {
+    if (length(h_disjoint) > 0 && !all(sf::st_is_empty(h_disjoint))) {
       result_list[[length(result_list) + 1]] <- sf::st_sf(
         facteur_h = h,
         geometry = sf::st_sfc(h_disjoint, crs = crs_orig)
@@ -249,41 +249,57 @@ calculer_distances_vent <- function(arbres_sf,
   # Coordonnées
   xy_arbres <- sf::st_coordinates(arbres_sf)
   xy_cells <- terra::xyFromCell(r_template, 1:terra::ncell(r_template))
+  n_cells <- nrow(xy_cells)
+  cell_x <- xy_cells[, 1]
+  cell_y <- xy_cells[, 2]
 
   # Angles
   theta_wind <- angle_vent * pi / 180
   half_angle <- (angle_focal / 2) * pi / 180
 
-  dist_amont <- numeric(nrow(xy_cells)); dist_aval <- numeric(nrow(xy_cells))
+  # Calcul vectorise : on boucle sur les arbres (generalement bien moins
+  # nombreux que les cellules) et on met a jour le minimum par cellule.
+  dist_amont <- rep(Inf, n_cells)
+  dist_aval <- rep(Inf, n_cells)
 
-  for (i in seq_len(nrow(xy_cells))) {
-    x <- xy_cells[i, 1]; y <- xy_cells[i, 2]
-    dx <- xy_arbres[, 1] - x; dy <- xy_arbres[, 2] - y
-    dists <- sqrt(dx^2 + dy^2)
-    angles <- atan2(dy, dx)
-    diff_angles <- angles - theta_wind
-    diff_angles <- atan2(sin(diff_angles), cos(diff_angles))
+  if (nrow(xy_arbres) > 0) {
+    for (j in seq_len(nrow(xy_arbres))) {
+      dx <- xy_arbres[j, 1] - cell_x
+      dy <- xy_arbres[j, 2] - cell_y
+      dists <- sqrt(dx^2 + dy^2)
+      diff_angles <- atan2(dy, dx) - theta_wind
+      diff_angles <- atan2(sin(diff_angles), cos(diff_angles))
 
-    idx_amont <- which(abs(diff_angles) <= half_angle)
-    if (length(idx_amont) > 0) dist_amont[i] <- min(dists[idx_amont])
-    idx_aval <- which(abs(abs(diff_angles) - pi) <= half_angle)
-    if (length(idx_aval) > 0) dist_aval[i] <- min(dists[idx_aval])
-    
-    if (i %% 100000 == 0) message(sprintf("  %.0f%%", i / nrow(xy_cells) * 100))
+      idx_amont <- abs(diff_angles) <= half_angle
+      if (any(idx_amont)) {
+        dist_amont[idx_amont] <- pmin(dist_amont[idx_amont], dists[idx_amont])
+      }
+
+      idx_aval <- abs(abs(diff_angles) - pi) <= half_angle
+      if (any(idx_aval)) {
+        dist_aval[idx_aval] <- pmin(dist_aval[idx_aval], dists[idx_aval])
+      }
+    }
   }
 
-  dist_amont[dist_amont == 0] <- max_distance
-  dist_aval[dist_aval == 0] <- max_distance
+  dist_amont[!is.finite(dist_amont)] <- max_distance
+  dist_aval[!is.finite(dist_aval)] <- max_distance
 
   raster_amont <- terra::rast(r_template); terra::values(raster_amont) <- dist_amont
   raster_aval <- terra::rast(r_template); terra::values(raster_aval) <- dist_aval
 
-  # Lissage
-  w <- matrix(1, nrow = taille_lissage, ncol = taille_lissage); w <- w / sum(w)
-  amont_smooth <- terra::focal(raster_amont, w = w, na.rm = TRUE)
-  aval_smooth <- terra::focal(raster_aval, w = w, na.rm = TRUE)
+  # Lissage (ignore si taille_lissage <= 1 : fenetre 1x1 non valide)
   dist_totale <- terra::ifel(raster_amont < raster_aval, raster_amont, raster_aval)
-  dist_totale_smooth <- terra::focal(dist_totale, w = w, na.rm = TRUE)
+  if (taille_lissage > 1) {
+    w <- matrix(1, nrow = taille_lissage, ncol = taille_lissage); w <- w / sum(w)
+    amont_smooth <- terra::focal(raster_amont, w = w, na.rm = TRUE)
+    aval_smooth <- terra::focal(raster_aval, w = w, na.rm = TRUE)
+    dist_totale_smooth <- terra::focal(dist_totale, w = w, na.rm = TRUE)
+  } else {
+    amont_smooth <- raster_amont
+    aval_smooth <- raster_aval
+    dist_totale_smooth <- dist_totale
+  }
 
   # Crop
   ext_crop <- terra::ext(xmin, xmax, ymin, ymax)

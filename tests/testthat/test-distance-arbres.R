@@ -177,3 +177,61 @@ test_that("calculer_distances_vent fonctionne", {
   expect_true("angle_vent" %in% names(result))
   expect_equal(result$angle_vent, 270)
 })
+
+
+test_that("calculer_distances_vent: totale = min(amont, aval) sans lissage", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("sf")
+
+  arbres <- sf::st_sf(
+    id = 1:5,
+    geometry = sf::st_sfc(
+      sf::st_point(c(20, 50)),
+      sf::st_point(c(40, 50)),
+      sf::st_point(c(60, 50)),
+      sf::st_point(c(80, 50)),
+      sf::st_point(c(90, 50)),
+      crs = 32618
+    )
+  )
+  coords <- matrix(c(0, 0, 100, 0, 100, 100, 0, 100, 0, 0), ncol = 2, byrow = TRUE)
+  champ <- sf::st_sf(geometry = sf::st_sfc(sf::st_polygon(list(coords)), crs = 32618))
+
+  # taille_lissage = 1 ne doit pas produire d'erreur (fenetre 1x1)
+  res <- calculer_distances_vent(
+    arbres_sf = arbres, angle_vent = 270, champ_bbox = champ,
+    resolution = 10, max_distance = 50, angle_focal = 45, taille_lissage = 1
+  )
+
+  a <- terra::values(res$amont)
+  v <- terra::values(res$aval)
+  t <- terra::values(res$totale)
+  expect_equal(t, pmin(a, v))
+})
+
+
+test_that("calculer_distances_vent place les arbres dans le bon secteur", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("sf")
+
+  # Un seul arbre au sud du point (50, 50) => angle mathematique 270 degres
+  arbre <- sf::st_sf(
+    id = 1,
+    geometry = sf::st_sfc(sf::st_point(c(50, 20)), crs = 32618)
+  )
+  coords <- matrix(c(0, 0, 100, 0, 100, 100, 0, 100, 0, 0), ncol = 2, byrow = TRUE)
+  champ <- sf::st_sf(geometry = sf::st_sfc(sf::st_polygon(list(coords)), crs = 32618))
+
+  # Vent a 270 deg (vers le sud) : l'arbre est en "amont"
+  res <- calculer_distances_vent(
+    arbres_sf = arbre, angle_vent = 270, champ_bbox = champ,
+    resolution = 10, max_distance = 50, angle_focal = 20, taille_lissage = 1
+  )
+
+  amont_centre <- terra::extract(res$amont, matrix(c(50, 50), ncol = 2))[1, 1]
+  aval_centre <- terra::extract(res$aval, matrix(c(50, 50), ncol = 2))[1, 1]
+
+  # L'arbre est en amont (distance ~30m), pas en aval (max_distance)
+  expect_equal(amont_centre, 30, tolerance = 5)
+  expect_equal(aval_centre, 50, tolerance = 1)
+})

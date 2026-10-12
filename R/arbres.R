@@ -473,8 +473,8 @@ extraire_ligne_centrale_haies <- function(haies_rectangles, output_type = c("tou
   )
   
   # Extraire les attributs des haies
-  haies_attrs <- haies_rectangles %>%
-    sf::st_drop_geometry() %>%
+  haies_attrs <- haies_rectangles |>
+    sf::st_drop_geometry() |>
     dplyr::mutate(idx = dplyr::row_number())
   
   if (output_type %in% c("lignes", "tous")) {
@@ -491,8 +491,8 @@ extraire_ligne_centrale_haies <- function(haies_rectangles, output_type = c("tou
     lignes_sf <- sf::st_sf(
       lignes_data,
       geometry = sf::st_sfc(lignes_list, crs = crs_haies)
-    ) %>%
-      dplyr::left_join(haies_attrs, by = "idx") %>%
+    ) |>
+      dplyr::left_join(haies_attrs, by = "idx") |>
       dplyr::select(-idx)
     
     message("✓ ", nrow(lignes_sf), " lignes centrales créées")
@@ -531,8 +531,8 @@ extraire_ligne_centrale_haies <- function(haies_rectangles, output_type = c("tou
     extremites_sf <- sf::st_sf(
       extremites_data,
       geometry = sf::st_sfc(extremites_list, crs = crs_haies)
-    ) %>%
-      dplyr::left_join(haies_attrs, by = "idx") %>%
+    ) |>
+      dplyr::left_join(haies_attrs, by = "idx") |>
       dplyr::select(-idx)
     
     message("✓ ", nrow(extremites_sf), " points d'extrémité créés (", nrow(extremites_sf)/2, " haies)")
@@ -605,33 +605,16 @@ rasteriser_zones_gradient <- function(zones_sf, resolution = 1, extent_bbox = NU
   
   # Convertir en vecteur terra pour traitement rapide
   zones_vect <- terra::vect(zones_sf)
-  facteurs_h <- zones_sf$facteur_h
   
-  # Rasteriser chaque zone avec sa valeur de facteur_h,
-  # puis prendre le minimum par pixel (les pixels non couverts restent Inf)
-  raster_list <- list()
-  for (i in seq_len(nrow(zones_sf))) {
-    zone_raster <- terra::rasterize(
-      zones_vect[i],
-      r_template,
-      field = facteurs_h[i],
-      background = NA
-    )
-    raster_list[[i]] <- zone_raster
-    
-    if (i %% 100 == 0 || i == nrow(zones_sf)) {
-      message("  Zone ", i, "/", nrow(zones_sf), " rasterisée")
-    }
-  }
-  
-  # Minimum par pixel
-  if (length(raster_list) > 0) {
-    r_stack <- terra::rast(raster_list)
-    r_template <- terra::app(r_stack, fun = min, na.rm = TRUE)
-  }
-  
-  # Remplacer Inf par NA (pixels non couverts par aucune zone)
-  r_template <- terra::ifel(r_template == Inf, NA, r_template)
+  # Une seule passe de rasterisation : terra agrège les zones superposées avec
+  # fun = "min", ce qui donne directement le facteur H le plus faible par pixel.
+  r_template <- terra::rasterize(
+    zones_vect,
+    r_template,
+    field = "facteur_h",
+    fun = "min",
+    background = NA
+  )
   
   # Nommer la couche
   names(r_template) <- "facteur_H_min"
@@ -700,48 +683,16 @@ rasteriser_zones_gradient_v2 <- function(zones_sf, resolution = 1, extent_bbox =
   message("  Résolution: ", resolution, "m")
   message("  Nombre de zones: ", nrow(zones_sf))
   
-  # Trier les zones par facteur H croissant (important!)
-  # Comme on veut le minimum, on traite d'abord les petits H
-  zones_sorted <- zones_sf %>%
-    dplyr::arrange(facteur_h)
-  
-  # Convertir en vecteur terra
-  zones_vect <- terra::vect(zones_sorted)
-  facteurs_h <- zones_sorted$facteur_h
-  
-  # Méthode corrigée: rasteriser toutes les zones d'abord
-  # puis calculer le minimum
-  message("  Création de la stack de rasters...")
-  
-  # Créer une liste pour stocker tous les rasters
-  raster_list <- list()
-  
-  for (i in seq_len(nrow(zones_sorted))) {
-    # Créer un raster temporaire pour cette zone avec sa valeur H
-    zone_rast <- terra::rasterize(
-      zones_vect[i], 
-      r_template, 
-      field = facteurs_h[i],
-      background = NA
-    )
-    
-    raster_list[[i]] <- zone_rast
-    
-    if (i %% 50 == 0 || i == nrow(zones_sorted)) {
-      message("  Zone ", i, "/", nrow(zones_sorted), " rasterisée (H=", facteurs_h[i], ")")
-    }
-  }
-  
-  message("  Calcul du minimum par pixel...")
-  # Combiner tous les rasters et calculer le minimum
-  if (length(raster_list) > 0) {
-    # Utiliser rast pour créer un SpatRasterDataset puis calculer le min
-    r_stack <- terra::rast(raster_list)
-    r_template <- terra::app(r_stack, fun = min, na.rm = TRUE)
-  }
-  
-  # Remplacer Inf par NA
-  r_template <- terra::ifel(r_template == Inf, NA, r_template)
+  # Une seule passe de rasterisation : terra agrège les zones superposées avec
+  # fun = "min", ce qui donne directement le facteur H le plus faible par pixel.
+  zones_vect <- terra::vect(zones_sf)
+  r_template <- terra::rasterize(
+    zones_vect,
+    r_template,
+    field = "facteur_h",
+    fun = "min",
+    background = NA
+  )
   
   # Nommer
   names(r_template) <- "facteur_H_min"

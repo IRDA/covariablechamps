@@ -25,6 +25,8 @@ navbar:
           href: articles/distances-bordures.html
         - text: "Detection des haies"
           href: articles/haies-brise-vent.html
+        - text: "Zones de protection des haies"
+          href: articles/zones-protection-vent.html
         - text: "Calcul de l'ombrage"
           href: articles/ombrage.html
         - text: "Distances aux arbres et vent"
@@ -92,7 +94,7 @@ reference:
       - simuler_vitesse_vent_fetch
       - calculer_fetch_vent
       - visualiser_fetch
-      - distance_arbres-package
+      - distance_arbres
 
   - title: "Visualisation du vent"
     desc: "Fonctions pour visualiser les cartes de vent"
@@ -133,6 +135,7 @@ articles:
       - covariables-terrain
       - distances-bordures
       - haies-brise-vent
+      - zones-protection-vent
       - ombrage
       - distances-arbres-vent
       - topographie

@@ -19,8 +19,10 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.3
 Depends: 
-    R (>= 4.0.0)
+    R (>= 4.1.0)
 Imports:
+    methods,
+    rlang,
     sf,
     terra,
     rstac,
@@ -32,7 +34,11 @@ Imports:
     data.table,
     suncalc,
     rayshader,
-    viridis
+    viridis,
+    ggplot2,
+    tidyr,
+    scales,
+    compositions
 Suggests:
     testthat (>= 3.0.0),
     knitr,
@@ -43,8 +49,6 @@ Suggests:
     purrr,
     tibble,
     lidaRtRee,
-    ggplot2,
-    tidyr,
     patchwork
 VignetteBuilder: knitr
 Remotes:

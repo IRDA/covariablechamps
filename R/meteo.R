@@ -413,7 +413,7 @@ tracer_rose_vents_stacked <- function(rose_vents,
     class_labels <- unlist(classes_info)
     names(class_labels) <- names(classes_info)
   } else {
-    class_labels <- setNames(
+    class_labels <- stats::setNames(
       c(" 0.0 –  5.4"," 5.4 – 10.8","10.8 - 15.8","15.8 – 18.4","18.4 – 20.2",
         "20.2 – 21.6","21.6 – 23.0","23.0 – 25.2","25.2 – 33.8","33.8 +"),
       paste0("CLASS_", 1:10)

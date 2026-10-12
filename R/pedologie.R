@@ -87,9 +87,9 @@ telecharger_pedologie_quebec <- function(champ,
     ids_telecharges <- unique(as.character(polygones[[col_poly]]))
   }
   
-  table_series <- pps %>%
-    dplyr::filter(.data[["Code polygone"]] %in% ids_telecharges) %>%
-    dplyr::inner_join(texture, by = "Composante") %>%
+  table_series <- pps |>
+    dplyr::filter(.data[["Code polygone"]] %in% ids_telecharges) |>
+    dplyr::inner_join(texture, by = "Composante") |>
     dplyr::select(
       Code.polygone = "Code polygone",
       "Composante",

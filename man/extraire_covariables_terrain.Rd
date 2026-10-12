@@ -15,6 +15,8 @@ extraire_covariables_terrain(
 \arguments{
 \item{polygone}{Un objet `sf` représentant la zone d'intérêt ou un chemin de fichier}
 
+\item{search_radius}{Rayon de recherche (m) pour les géomorphons (défaut: 100)}
+
 \item{dossier}{Dossier de sortie pour sauvegarder les rasters (optionnel)}
 
 \item{epsg}{Code EPSG pour la projection de sortie (défaut: 4326)}

@@ -227,6 +227,7 @@ calculer_geomorphons_single <- function(mnt, search_radius, skip_radius, flatnes
 #' pour un champ donné à partir du MNT LiDAR.
 #'
 #' @param polygone Un objet `sf` représentant la zone d'intérêt ou un chemin de fichier
+#' @param search_radius Rayon de recherche (m) pour les géomorphons (défaut: 100)
 #' @param dossier Dossier de sortie pour sauvegarder les rasters (optionnel)
 #' @param epsg Code EPSG pour la projection de sortie (défaut: 4326)
 #' @param ... Arguments supplémentaires passés à `telecharger_lidar()`

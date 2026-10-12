@@ -91,29 +91,32 @@ calculer_fetch_vent <- function(arbres_sf,
   cos_t <- cos(theta)
   sin_t <- sin(theta)
 
-  # Pour chaque cellule du raster
+  # Calcul vectorise : on boucle sur les arbres (bien moins nombreux que les
+  # cellules) et on met a jour la distance minimale par cellule.
   xy_cells <- terra::xyFromCell(r_template, 1:terra::ncell(r_template))
   n_cells <- nrow(xy_cells)
+  cell_x <- xy_cells[, 1]
+  cell_y <- xy_cells[, 2]
 
-  # Initialiser les distances
-  dist_along_wind <- numeric(n_cells)
-  dist_across_wind <- numeric(n_cells)
+  dist_along_wind <- rep(Inf, n_cells)
 
-  for (i in seq_len(n_cells)) {
-    x <- xy_cells[i, 1]
-    y <- xy_cells[i, 2]
+  if (nrow(xy_centers) > 0) {
+    for (j in seq_len(nrow(xy_centers))) {
+      dx <- cell_x - xy_centers[j, 1]
+      dy <- cell_y - xy_centers[j, 2]
 
-    # Rotation: coordonnées dans le système aligné avec le vent
-    x_rot <- (x - xy_centers[, 1]) * cos_t + (y - xy_centers[, 2]) * sin_t
-    y_rot <- -(x - xy_centers[, 1]) * sin_t + (y - xy_centers[, 2]) * cos_t
+      # Rotation: coordonnées dans le système aligné avec le vent
+      x_rot <- dx * cos_t + dy * sin_t
+      y_rot <- -dx * sin_t + dy * cos_t
 
-    # Distance le long du vent (x_rot) et perpendiculaire (y_rot)
-    # Distance "elliptique" : combine les deux avec le coef
-    dists <- sqrt((x_rot / coef_ellipse)^2 + y_rot^2)
+      # Distance "elliptique" : combine les deux avec le coef
+      dists <- sqrt((x_rot / coef_ellipse)^2 + y_rot^2)
 
-    # Prendre la distance minimale
-    dist_along_wind[i] <- min(dists)
+      dist_along_wind <- pmin(dist_along_wind, dists)
+    }
   }
+
+  dist_along_wind[!is.finite(dist_along_wind)] <- max_fetch
 
   # Créer le raster de distance directionnelle
   dist_dir <- terra::rast(r_template)

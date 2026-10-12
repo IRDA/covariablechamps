@@ -8,6 +8,8 @@
   Champ](https://cedricbouffard.github.io/covariablechamps/articles/distances-bordures.md):
 - [Detection et analyse des haies
   brise-vent](https://cedricbouffard.github.io/covariablechamps/articles/haies-brise-vent.md):
+- [Zones de protection des haies
+  brise-vent](https://cedricbouffard.github.io/covariablechamps/articles/zones-protection-vent.md):
 - [Calcul de l'ombrage des
   parcelles](https://cedricbouffard.github.io/covariablechamps/articles/ombrage.md):
 - [Distances aux Arbres et Effet du

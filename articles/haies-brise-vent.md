@@ -121,21 +121,19 @@ protection:
 # Définir la direction du vent (degrés, 0 = Nord, 90 = Est)
 direction_vent <- 270  # Vent d'ouest
 
-# Calculer les zones de vent avec spline
+# Calculer les zones de vent avec spline à partir des rectangles de haies
 zones <- calculer_zones_vent_spline(
-  haies = lignes_haies,
+  haies_rectangles = resultat$haies_rectangles,
   direction_vent = direction_vent,
-  facteurs_h = c(1, 2, 3, 5, 10),
-  hauteur_haie = NULL
+  facteur_hauteur = c(1, 2, 3, 5, 10)
 )
 
-# Rasteriser les zones
-template <- rast(champ, resolution = 2)
-zones_raster <- rasteriser_zones_gradient_v2(zones, template)
+# Rasteriser les zones (facteur H minimum par pixel)
+zones_raster <- rasteriser_zones_gradient_v2(zones, resolution = 2)
 
 # Visualiser
 plot(zones_raster, main = "Zones de protection (multiples de H)")
-plot(st_geometry(lignes_haies), add = TRUE, col = "black", lwd = 2)
+plot(st_geometry(champ), add = TRUE, border = "black", lwd = 2)
 ```
 
 ## Distances aux arbres
@@ -193,16 +191,15 @@ lignes_haies <- extraire_ligne_centrale_haies(resultat$haies_rectangles)
 # 5. Calculer les zones de protection
 direction_vent <- 270  # Vent d'ouest
 zones <- calculer_zones_vent_spline(
-  haies = lignes_haies,
+  haies_rectangles = resultat$haies_rectangles,
   direction_vent = direction_vent,
-  facteurs_h = c(1, 2, 5, 10)
+  facteur_hauteur = c(1, 2, 5, 10)
 )
 
 # 6. Rasteriser et visualiser
-template <- rast(champ, resolution = 2)
-zones_raster <- rasteriser_zones_gradient_v2(zones, template)
+zones_raster <- rasteriser_zones_gradient_v2(zones, resolution = 2)
 plot(zones_raster)
-plot(st_geometry(lignes_haies), add = TRUE, col = "black", lwd = 2)
+plot(st_geometry(champ), add = TRUE, border = "black", lwd = 2)
 ```
 
 ## Références

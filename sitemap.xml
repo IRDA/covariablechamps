@@ -11,6 +11,7 @@
 <url><loc>https://cedricbouffard.github.io/covariablechamps/articles/pedologie.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/articles/topographie.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/articles/vent-meteo.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/covariablechamps/articles/zones-protection-vent.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/authors.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/index.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/news/index.html</loc></url>
@@ -28,7 +29,7 @@
 <url><loc>https://cedricbouffard.github.io/covariablechamps/reference/calculer_zones_vent_spline.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/reference/classifier_distances_bordures.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/reference/detecter_utm_epsg.html</loc></url>
-<url><loc>https://cedricbouffard.github.io/covariablechamps/reference/distance_arbres-package.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/covariablechamps/reference/distance_arbres.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/reference/extraire_classifier_haies_lidar.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/reference/extraire_covariables_complet.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/covariablechamps/reference/extraire_covariables_terrain.html</loc></url>

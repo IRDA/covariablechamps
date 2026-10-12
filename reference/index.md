@@ -14,7 +14,7 @@ gouvernementaux
 - [`vider_cache_lidar()`](https://cedricbouffard.github.io/covariablechamps/reference/vider_cache_lidar.md)
   : Vider le cache LiDAR
 - [`detecter_utm_epsg()`](https://cedricbouffard.github.io/covariablechamps/reference/detecter_utm_epsg.md)
-  : Calculer l'orientation principale d'un champ
+  : Détecter le code EPSG UTM approprié pour un objet sf
 
 ## Analyse du terrain
 
@@ -89,7 +89,7 @@ Fonctions pour calculer les distances aux arbres et l’effet du vent
   (elliptique)
 - [`visualiser_fetch()`](https://cedricbouffard.github.io/covariablechamps/reference/visualiser_fetch.md)
   : Visualiser le fetch de vent
-- [`distance_arbres-package`](https://cedricbouffard.github.io/covariablechamps/reference/distance_arbres-package.md)
+- [`distance_arbres`](https://cedricbouffard.github.io/covariablechamps/reference/distance_arbres.md)
   : Récapitulatif des fonctions distance_arbres
 
 ## Visualisation du vent

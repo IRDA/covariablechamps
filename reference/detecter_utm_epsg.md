@@ -1,8 +1,7 @@
-# Calculer l'orientation principale d'un champ
+# Détecter le code EPSG UTM approprié pour un objet sf
 
-Calcule l'orientation principale (azimut) d'un champ agricole à partir
-de sa géométrie. Utilise la bounding box orientée ou les moments
-d'inertie pour déterminer l'angle principal.
+Calcule la zone UTM (nord ou sud) correspondant au centroïde d'un objet
+\`sf\`.
 
 ## Usage
 
@@ -12,63 +11,19 @@ detecter_utm_epsg(sf_obj)
 
 ## Arguments
 
-- polygone:
+- sf_obj:
 
-  Un objet \`sf\` représentant le champ ou un chemin vers un fichier
-  vectoriel
-
-- methode:
-
-  Méthode de calcul: "mbr" (Minimum Bounding Rectangle, défaut) ou "pca"
-  (analyse en composantes principales)
-
-- unite:
-
-  Unité de sortie: "degres" (défaut) ou "radians"
-
-- orientation:
-
-  Référence d'orientation: "geographique" (0=Nord, 90=Est, défaut) ou
-  "mathematique" (0=Est, 90=Nord)
+  Un objet \`sf\` représentant la zone d'intérêt.
 
 ## Value
 
-Une liste contenant:
-
-- angle:
-
-  L'angle principal en degrés ou radians
-
-- angle_perpendiculaire:
-
-  L'angle perpendiculaire (±90°)
-
-- longueur:
-
-  La longueur selon l'axe principal
-
-- largeur:
-
-  La largeur selon l'axe perpendiculaire
-
-- rapport_aspect:
-
-  Le rapport longueur/largeur
-
-- geometry:
-
-  La géométrie de la bounding box orientée
+Le code EPSG (entier) de la zone UTM correspondante.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
 champ <- sf::st_read("champ.shp")
-orientation <- calculer_orientation_champ(champ)
-print(paste("Orientation principale:", round(orientation$angle, 1), "degrés"))
-
-# Avec visualisation
-plot(champ)
-plot(orientation$geometry, add = TRUE, border = "red", lwd = 2)
+epsg <- detecter_utm_epsg(champ)
 } # }
 ```

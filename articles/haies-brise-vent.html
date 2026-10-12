@@ -37,6 +37,7 @@
 <li><a class="dropdown-item" href="../articles/covariables-terrain.html">Guide de demarrage</a></li>
     <li><a class="dropdown-item" href="../articles/distances-bordures.html">Distances aux bordures</a></li>
     <li><a class="dropdown-item" href="../articles/haies-brise-vent.html">Detection des haies</a></li>
+    <li><a class="dropdown-item" href="../articles/zones-protection-vent.html">Zones de protection des haies</a></li>
     <li><a class="dropdown-item" href="../articles/ombrage.html">Calcul de l'ombrage</a></li>
     <li><a class="dropdown-item" href="../articles/distances-arbres-vent.html">Distances aux arbres et vent</a></li>
     <li><a class="dropdown-item" href="../articles/topographie.html">Analyse topographique</a></li>
@@ -224,21 +225,19 @@ protection:</p>
 <code class="sourceCode R"><span><span class="co"># Définir la direction du vent (degrés, 0 = Nord, 90 = Est)</span></span>
 <span><span class="va">direction_vent</span> <span class="op">&lt;-</span> <span class="fl">270</span>  <span class="co"># Vent d'ouest</span></span>
 <span></span>
-<span><span class="co"># Calculer les zones de vent avec spline</span></span>
+<span><span class="co"># Calculer les zones de vent avec spline à partir des rectangles de haies</span></span>
 <span><span class="va">zones</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculer_zones_vent_spline.html">calculer_zones_vent_spline</a></span><span class="op">(</span></span>
-<span>  haies <span class="op">=</span> <span class="va">lignes_haies</span>,</span>
+<span>  haies_rectangles <span class="op">=</span> <span class="va">resultat</span><span class="op">$</span><span class="va">haies_rectangles</span>,</span>
 <span>  direction_vent <span class="op">=</span> <span class="va">direction_vent</span>,</span>
-<span>  facteurs_h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span>,</span>
-<span>  hauteur_haie <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  facteur_hauteur <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Rasteriser les zones</span></span>
-<span><span class="va">template</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">champ</span>, resolution <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">zones_raster</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rasteriser_zones_gradient_v2.html">rasteriser_zones_gradient_v2</a></span><span class="op">(</span><span class="va">zones</span>, <span class="va">template</span><span class="op">)</span></span>
+<span><span class="co"># Rasteriser les zones (facteur H minimum par pixel)</span></span>
+<span><span class="va">zones_raster</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rasteriser_zones_gradient_v2.html">rasteriser_zones_gradient_v2</a></span><span class="op">(</span><span class="va">zones</span>, resolution <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Visualiser</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">zones_raster</span>, main <span class="op">=</span> <span class="st">"Zones de protection (multiples de H)"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_geometry</a></span><span class="op">(</span><span class="va">lignes_haies</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span>, col <span class="op">=</span> <span class="st">"black"</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_geometry</a></span><span class="op">(</span><span class="va">champ</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span>, border <span class="op">=</span> <span class="st">"black"</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="distances-aux-arbres">Distances aux arbres<a class="anchor" aria-label="anchor" href="#distances-aux-arbres"></a>
@@ -300,16 +299,15 @@ pour capturer les haies étroites</li>
 <span><span class="co"># 5. Calculer les zones de protection</span></span>
 <span><span class="va">direction_vent</span> <span class="op">&lt;-</span> <span class="fl">270</span>  <span class="co"># Vent d'ouest</span></span>
 <span><span class="va">zones</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculer_zones_vent_spline.html">calculer_zones_vent_spline</a></span><span class="op">(</span></span>
-<span>  haies <span class="op">=</span> <span class="va">lignes_haies</span>,</span>
+<span>  haies_rectangles <span class="op">=</span> <span class="va">resultat</span><span class="op">$</span><span class="va">haies_rectangles</span>,</span>
 <span>  direction_vent <span class="op">=</span> <span class="va">direction_vent</span>,</span>
-<span>  facteurs_h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span>  facteur_hauteur <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 6. Rasteriser et visualiser</span></span>
-<span><span class="va">template</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">champ</span>, resolution <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">zones_raster</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rasteriser_zones_gradient_v2.html">rasteriser_zones_gradient_v2</a></span><span class="op">(</span><span class="va">zones</span>, <span class="va">template</span><span class="op">)</span></span>
+<span><span class="va">zones_raster</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rasteriser_zones_gradient_v2.html">rasteriser_zones_gradient_v2</a></span><span class="op">(</span><span class="va">zones</span>, resolution <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">zones_raster</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_geometry</a></span><span class="op">(</span><span class="va">lignes_haies</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span>, col <span class="op">=</span> <span class="st">"black"</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_geometry</a></span><span class="op">(</span><span class="va">champ</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span>, border <span class="op">=</span> <span class="st">"black"</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="références">Références<a class="anchor" aria-label="anchor" href="#r%C3%A9f%C3%A9rences"></a>

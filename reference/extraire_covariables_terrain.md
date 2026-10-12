@@ -21,6 +21,10 @@ extraire_covariables_terrain(
 
   Un objet \`sf\` représentant la zone d'intérêt ou un chemin de fichier
 
+- search_radius:
+
+  Rayon de recherche (m) pour les géomorphons (défaut: 100)
+
 - dossier:
 
   Dossier de sortie pour sauvegarder les rasters (optionnel)

@@ -38,7 +38,7 @@ telecharger_lidar_ponctuel(
 
   Dossier de sortie pour sauvegarder les fichiers (optionnel)
 
-- métriques:
+- metriques:
 
   Logique. Si TRUE, calcule les métriques de hauteur
 

@@ -15,3 +15,5 @@ tests/testthat/Rplots.pdf
 tests/testthat/testthat-problems.rds
 vignettes/output/*.tif
 vignettes/output/*.xml
+vignettes/*_cache/
+vig_check/

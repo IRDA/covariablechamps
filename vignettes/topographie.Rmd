@@ -1,8 +1,8 @@
 ---
-title: "Analyse Topographique des Champs Agricoles"
+title: "Analyse topographique détaillée"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Analyse Topographique}
+  %\VignetteIndexEntry{Analyse topographique détaillée}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -11,8 +11,8 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 8,
-  fig.height = 6,
+  fig.width = 7,
+  fig.height = 5,
   message = FALSE,
   warning = FALSE
 )
@@ -20,163 +20,121 @@ knitr::opts_chunk$set(
 
 ```{r libs}
 library(covariablechamps)
-library(sf)
 library(terra)
-library(ggplot2)
+library(sf)
 ```
 
-## Introduction
+## Du relief aux indices dérivés
 
-L'analyse topographique est essentielle pour comprendre le relief d'un champ agricole. Le package `covariablechamps` fournit plusieurs outils pour analyser la topographie:
+L'article **Démarrage : covariables terrain** présente les briques de base
+(pente, aspect, hillshade, géomorphons). Ici, on va plus loin : on dérive
+des indices de forme et on lit le relief le long de transects, avec une
+lecture agronomique.
 
-- **Pente**: Inclinaison du terrain en degrés
-- **Aspect**: Orientation du terrain (Nord, Sud, Est, Ouest)
-- **Géomorphons**: Classification des formes de terrain
+On fabrique un paysage synthétique : une colline et un talweg.
 
-Ces covariables influencent:
-- Le drainage des sols
-- L'exposition au soleil et au vent
-- La sensibilité à l'érosion
-- Le choix des cultures
+```{r dem}
+set.seed(2)
+mnt <- terra::rast(nrows = 150, ncols = 150,
+                   xmin = 0, xmax = 750, ymin = 0, ymax = 750,
+                   crs = "EPSG:32618")
+xy <- terra::xyFromCell(mnt, 1:terra::ncell(mnt))
+colline <- 45 * exp(-((xy[, 1] - 250)^2 + (xy[, 2] - 550)^2) / (2 * 120^2))
+talweg  <- -30 * exp(-((xy[, 1] - 550)^2) / (2 * 90^2))
+terra::values(mnt) <- 120 + colline + talweg + 5 * sin(xy[, 1] / 60)
+names(mnt) <- "elevation"
 
-## Chargement du champ M2
-
-Le package inclut un champ d'exemple (`M2`) situé au Québec.
-
-```{r charger-champ}
-champ <- st_read(system.file("extdata", "M2.shp", package = "covariablechamps"))
-
-ggplot() +
-  geom_sf(data = champ, fill = "lightgreen", alpha = 0.5) +
-  theme_minimal() +
-  labs(title = "Champ M2",
-       subtitle = "Champ d'exemple inclus dans le package")
+terra::plot(mnt, col = hcl.colors(100, "Terrain"), main = "MNT synthétique (m)")
 ```
 
-## Téléchargement du MNT depuis LiDAR
+## Les dérivées de base
 
-Le MNT (Modèle Numérique de Terrain) est téléchargé depuis les données LiDAR du DataCube du Canada.
-
-**Note**: Le téléchargement peut prendre quelques minutes selon la taille de la zone.
-
-```{r telecharger-mnt, cache = TRUE}
-# Télécharger le MNT depuis LiDAR
-mnt <- telecharger_lidar(
-  polygone = champ,
-  mne = FALSE  # FALSE = MNT (sans arbres)
-)
-
-plot(mnt, main = "Modèle Numérique de Terrain (MNT)",
-     col = hcl.colors(100, "Terrain"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-```
-
-## Calcul de la pente
-
-La fonction `calculer_pente()` calcule l'inclinaison du terrain en degrés.
-
-```{r pente, cache = TRUE}
-pente <- calculer_pente(mnt)
-
-plot(pente, main = "Pente (degrés)",
-     col = hcl.colors(100, "Reds"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-```
-
-### Distribution des pentes
-
-```{r distribution-pente}
-vals_pente <- terra::values(pente)
-vals_pente <- vals_pente[!is.na(vals_pente)]
-
-hist(vals_pente, breaks = 30, main = "Distribution des pentes",
-     xlab = "Pente (degrés)", ylab = "Fréquence",
-     col = "lightblue", border = "white")
-
-cat("Statistiques de la pente:\n")
-cat(sprintf("  Min: %.1f°\n", min(vals_pente)))
-cat(sprintf("  Max: %.1f°\n", max(vals_pente)))
-cat(sprintf("  Moyenne: %.1f°\n", mean(vals_pente)))
-cat(sprintf("  Médiane: %.1f°\n", median(vals_pente)))
-```
-
-## Calcul de l'aspect (orientation)
-
-La fonction `calculer_aspect()` calcule l'orientation du terrain.
-
-```{r aspect, cache = TRUE}
+```{r base}
+pente  <- calculer_pente(mnt)
 aspect <- calculer_aspect(mnt)
+hs     <- terra::shade(pente * pi / 180, aspect * pi / 180)
 
-plot(aspect, main = "Aspect (degrés - direction du Nord)",
-     col = hcl.colors(100, "Zissou"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
+par(mfrow = c(2, 2), mar = c(2, 2, 3, 2))
+terra::plot(mnt,     col = hcl.colors(100, "Terrain"), main = "Élévation (m)")
+terra::plot(pente,   col = hcl.colors(100, "Reds"),    main = "Pente (°)")
+terra::plot(aspect,  col = hcl.colors(100, "Zissou"),  main = "Aspect (°)")
+terra::plot(hs,      col = grey(0:100 / 100),          main = "Hillshade")
 ```
 
-### Interprétation de l'aspect
+## Indices de forme
 
-L'aspect est exprimé en degrés:
-- 0° ou 360° = Nord
-- 90° = Est
-- 180° = Sud
-- 270° = Ouest
+`terra::terrain()` fournit des indices locaux complémentaires :
 
-Les valeurs manquantes (NA) indiquent les zones plates.
+- **TPI** (*Topographic Position Index*) : position relative au voisinage
+  (positif = butte, négatif = creux).
+- **TRI** (*Terrain Ruggedness Index*) : rugosité locale.
+- **Roughness** : amplitude locale du relief.
 
-## Visualisation combinée
+```{r indices}
+tpi <- terra::terrain(mnt, v = "TPI", neighbors = 8)
+tri <- terra::terrain(mnt, v = "TRI", neighbors = 8)
+rough <- terra::terrain(mnt, v = "roughness", neighbors = 8)
 
-```{r combine, cache = TRUE}
-par(mfrow = c(2, 2), mar = c(3, 3, 3, 3))
-
-plot(mnt, main = "MNT (élévation)", col = hcl.colors(100, "Terrain"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-
-plot(pente, main = "Pente (degrés)", col = hcl.colors(100, "Reds"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-
-plot(aspect, main = "Aspect (degrés)", col = hcl.colors(100, "Zissou"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-
-# Ombrage (hillshade)
-hillshade <- terra::shade(slope = pente * pi / 180, 
-                          aspect = aspect * pi / 180)
-plot(hillshade, main = "Ombrage (hillshade)", col = grey(0:100 / 100))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
+par(mfrow = c(1, 3), mar = c(2, 2, 3, 2))
+terra::plot(tpi,   col = hcl.colors(100, "RdBu", rev = TRUE),
+            main = "TPI (butte > 0 > creux)")
+terra::plot(tri,   col = hcl.colors(100, "Viridis"), main = "TRI (rugosité)")
+terra::plot(rough, col = hcl.colors(100, "Cividis"), main = "Roughness")
 ```
 
-## Extraction complète des covariables terrain
+## Relation pente × aspect
 
-La fonction `extraire_covariables_terrain()` calcule toutes les covariables en une seule commande:
+Croiser pente et aspect aide à repérer les versants raides exposés
+(par ex. sud = plus chaud, ouest = plus venté).
 
-```{r extract-all, cache = TRUE}
-result <- extraire_covariables_terrain(
-  polygone = champ,
-  dossier = NULL  # Sans sauvegarder
-)
+```{r pente-aspect}
+df <- data.frame(pente = terra::values(pente), aspect = terra::values(aspect))
+df <- df[stats::complete.cases(df), ]
 
-plot(result$mnt, main = "MNT")
-plot(result$pente, main = "Pente")
-plot(result$aspect, main = "Aspect")
+ggplot2::ggplot(df, ggplot2::aes(aspect, pente)) +
+  ggplot2::geom_bin2d(bins = 30) +
+  ggplot2::scale_fill_viridis_c(name = "Cellules") +
+  ggplot2::labs(title = "Pente selon l'aspect",
+                x = "Aspect (degrés, 0 = N)", y = "Pente (degrés)") +
+  ggplot2::theme_minimal()
 ```
 
-## Applications agricoles
+## Profil topographique (transect)
 
-### Drainage et pente
+```{r transect}
+ligne <- st_sf(geometry = st_sfc(
+  st_linestring(matrix(c(50, 550, 700, 550), ncol = 2, byrow = TRUE)),
+  crs = 32618))
 
-Les zones à forte pente sont généralement:
-- Mieux drainées (moins de saturation)
-- Plus sensibles à l'érosion
-- Plus difficiles à cultiver
+# Échantillon de points le long du transect (ligne horizontale y = 550)
+xs <- seq(50, 700, length.out = 200)
+pts <- st_as_sf(data.frame(x = xs, y = 550), coords = c("x", "y"), crs = 32618)
+elev <- terra::extract(mnt, terra::vect(pts))[, 1]
 
-### Exposition et aspect
+terra::plot(mnt, col = hcl.colors(100, "Terrain"), main = "Tracé du transect")
+plot(st_geometry(ligne), add = TRUE, col = "red", lwd = 3)
 
-L'orientation du terrain affecte:
-- L'ensoleillement (sud = plus chaud)
-- L'exposition aux vents dominants
-- Le gel tardif au printemps
+plot(xs - 50, elev, type = "l", lwd = 2, col = "darkgreen",
+     xlab = "Distance le long du transect (m)", ylab = "Élévation (m)",
+     main = "Profil topographique")
+```
 
-### Planification
+## Lecture agronomique
 
-Combinez la topographie avec d'autres données pour:
-- Identifier les zones à risque d'érosion
-- Optimiser le drainage
-- Planifier les rotations de cultures
+| Indice | Interprétation |
+|--------|----------------|
+| Pente forte | drainage rapide, risque d'érosion, travail du sol difficile |
+| TPI négatif | bas de pente / dépression : accumulation d'eau |
+| TPI positif | butte / crête : plus sec, exposé au vent |
+| Aspect sud | sol plus chaud, dégel printanier plus précoce |
+| Aspect nord | sol plus frais, gel tardif, humidité persistante |
+| TRI élevé | micro-relief accidenté, préparation du lit de semence difficile |
+
+Ces indices se combinent aux autres modules du package (ombrage, vent,
+pédologie) pour décrire finement chaque parcelle.
+
+## À retenir
+
+- `calculer_pente()` / `calculer_aspect()` : les dérivées de base.
+- `terra::terrain()` : TPI, TRI, roughness pour la forme locale.
+- Les **transects** relient le relief à des observations de terrain.

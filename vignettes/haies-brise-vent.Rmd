@@ -1,8 +1,8 @@
 ---
-title: "Detection et analyse des haies brise-vent"
+title: "Détection et analyse des haies brise-vent"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Detection et analyse des haies brise-vent}
+  %\VignetteIndexEntry{Détection et analyse des haies brise-vent}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -11,185 +11,137 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 8,
-  fig.height = 6,
-  message = FALSE
+  fig.width = 7,
+  fig.height = 5,
+  message = FALSE,
+  warning = FALSE
 )
 ```
 
-```{r libs, message = FALSE}
+```{r libs}
 library(covariablechamps)
 library(sf)
-library(terra)
 library(ggplot2)
 ```
 
-## Introduction
+## Du nuage de points à la haie
 
-Les haies brise-vent jouent un rôle important dans la protection des cultures contre le vent. Ce guide présente les fonctions du package `covariablechamps` pour détecter, classifier et analyser les haies à partir des données LiDAR.
+La détection des haies repose sur le LiDAR : un **DTM** est soustrait pour
+normaliser les hauteurs, un **CHM** (modèle de canopée) est segmenté en
+arbres, puis un **clustering** (DBSCAN) regroupe les arbres. Enfin, chaque
+groupe est classé selon sa forme :
 
-## Chargement du champ M2
+- **haie_brise_vent** : linéaire, allongée (L/W élevé, largeur faible) ;
+- **foret** : large, beaucoup d'arbres ;
+- **individuel** : arbre isolé.
 
-Le package inclut un champ d'exemple (`M2`) situé au Québec.
+Ce guide illustre la géométrie produite. Pour le calcul des **zones de
+protection** derrière les haies, voir l'article *Zones de protection des
+haies brise-vent*.
 
-```{r charger-champ}
-champ <- st_read(system.file("extdata", "M2.shp", package = "covariablechamps"))
+## Géométrie d'une haie
 
-ggplot() +
-  geom_sf(data = champ, fill = "lightgreen", alpha = 0.5) +
-  theme_minimal() +
-  labs(title = "Champ M2",
-       subtitle = "Exemples de données inclus dans le package")
-```
+Une haie est représentée par un **rectangle orienté** (largeur, longueur,
+angle) et une **ligne centrale** que l'on peut extraire avec ses extrémités.
 
-## Détection des arbres et haies depuis LiDAR
+```{r haie-synth}
+# Rectangle orienté à 20°, longueur 120 m, largeur 4 m, centré en (60, 40)
+ang <- 20 * pi / 180; L <- 120; W <- 4; cx <- 60; cy <- 40
+coins <- matrix(c(-L/2, -W/2, L/2, -W/2, L/2, W/2, -L/2, W/2, -L/2, -W/2),
+                ncol = 2, byrow = TRUE)
+R <- matrix(c(cos(ang), -sin(ang), sin(ang), cos(ang)), nrow = 2)
+coins <- coins %*% t(R)
+coins[, 1] <- coins[, 1] + cx
+coins[, 2] <- coins[, 2] + cy
 
-La fonction `extraire_classifier_haies_lidar()` détecte et classifie automatiquement les arbres et haies à partir d'un nuage de points LiDAR.
-
-**Note**: Cette fonction nécessite des données LiDAR réelles qui doivent être téléchargées. Elle n'est pas exécutée dans cet article.
-
-```{r detection-lidar, eval = FALSE}
-# 1. Télécharger les données LiDAR ponctuelles
-lidar <- telecharger_lidar_ponctuel(champ)
-
-# 2. Détecter et classifier les haies
-resultat <- extraire_classifier_haies_lidar(
-  nuage_points = lidar$nuage_points,
-  res_dtm = 1,
-  res_chm = 0.25,
-  hmin = 2,
-  eps_dbscan = 6,
-  minPts_dbscan = 3,
-  seuil_aspect = 6,
-  seuil_largeur_max = 12
+haie <- st_sf(
+  cluster = 1, n_arbres = 40, hauteur_p95 = 15,
+  largeur = W, longueur = L, angle_deg = 20,
+  x_center = cx, y_center = cy,
+  geometry = st_sfc(st_polygon(list(coins)), crs = 32618)
 )
 
-# 3. Récupérer les arbres classifiés
-arbres <- resultat$trees_sf
-haies <- resultat$haies_rectangles
+lignes <- extraire_ligne_centrale_haies(haie, output_type = "lignes")
+extrem <- extraire_ligne_centrale_haies(haie, output_type = "extremites")
 
-# 4. Visualiser les résultats
-plot(st_geometry(champ), col = "lightgreen")
-plot(st_geometry(arbres), add = TRUE, col = "darkgreen", pch = 19, cex = 0.5)
+ggplot() +
+  geom_sf(data = haie,   fill = "darkseagreen", colour = "darkgreen") +
+  geom_sf(data = lignes, colour = "black", linewidth = 1) +
+  geom_sf(data = extrem, colour = "red", size = 2) +
+  coord_sf() +
+  labs(title = "Rectangle, ligne centrale et extrémités d'une haie")
+```
+
+## Ce que renvoie la classification
+
+Après détection, `extraire_classifier_haies_lidar()` renvoie les arbres avec
+une colonne `classe`. Voici à quoi ressemble le résultat (points simulés) :
+
+```{r classes-synth}
+set.seed(3)
+n <- 260
+cl <- sample(c("haie_brise_vent", "foret", "individuel"), n,
+             replace = TRUE, prob = c(0.4, 0.25, 0.35))
+# positions plausibles selon la classe
+x <- ifelse(cl == "haie_brise_vent", 20 + rnorm(n, 0, 3),
+     ifelse(cl == "foret", 180 + rnorm(n, 0, 18), runif(n, 0, 300)))
+y <- ifelse(cl == "haie_brise_vent", 150 + rnorm(n, 0, 45),
+     ifelse(cl == "foret", 120 + rnorm(n, 0, 18), runif(n, 0, 300)))
+arbres <- st_as_sf(data.frame(x = x, y = y, classe = cl),
+                   coords = c("x", "y"), crs = 32618)
+
+ggplot() +
+  geom_sf(data = arbres, aes(colour = classe), size = 1.4) +
+  scale_colour_manual(values = c(haie_brise_vent = "darkgreen",
+                                 foret = "darkblue",
+                                 individuel = "orange")) +
+  coord_sf() +
+  labs(title = "Arbres classés", colour = "Classe")
+
+barplot(sort(table(arbres$classe), decreasing = TRUE),
+        col = c("darkblue", "darkgreen", "orange"), las = 1,
+        ylab = "Nombre d'arbres", main = "Effectif par classe")
+```
+
+## Pipeline LiDAR réel
+
+```{r detection-lidar, eval = FALSE}
+champ <- st_read("mon_champ.shp")
+
+# 1. Télécharger le nuage de points LiDAR
+lidar <- telecharger_lidar_ponctuel(champ, buffer = 100)
+
+# 2. Détecter, regrouper et classifier
+resultat <- extraire_classifier_haies_lidar(
+  nuage_points = lidar$nuage_points,
+  res_dtm = 1, res_chm = 0.25, hmin = 2,
+  eps_dbscan = 6, minPts_dbscan = 3,
+  seuil_aspect = 6, seuil_largeur_max = 12
+)
+
+arbres  <- resultat$trees_sf          # arbres + classe
+haies   <- resultat$haies_rectangles  # rectangles des haies
 ```
 
 ### Paramètres de détection
 
-| Paramètre | Description | Valeur par défaut |
-|-----------|-------------|-------------------|
-| `res_dtm` | Résolution du MNT (m) | 1 |
-| `res_chm` | Résolution du MCH (m) | 0.25 |
-| `hmin` | Hauteur minimale des arbres (m) | 2 |
-| `eps_dbscan` | Distance pour clustering DBSCAN | 6 |
-| `minPts_dbscan` | Points minimum pour cluster | 3 |
-| `seuil_aspect` | Ratio L/W minimal pour haie | 6 |
-| `seuil_largeur_max` | Largeur max d'une haie (m) | 12 |
-
-### Classification des arbres
-
-La fonction classifie les éléments en trois catégories:
-
-- **foret**: Groupe d'arbres (> 30 arbres, largeur > 20m)
-- **haie_brise_vent**: Linéaire d'arbres (L/W > 6, largeur < 12m)
-- **individuel**: Arbre isolé
-
-## Extraction des lignes centrales
-
-Pour les analyses de distance au vent, vous pouvez extraire les lignes centrales des haies:
-
-```{r lignes-centrales, eval = FALSE}
-# Extraire les lignes centrales des haies
-lignes_haies <- extraire_ligne_centrale_haies(resultat$haies_rectangles)
-
-# Visualiser
-plot(st_geometry(champ), col = "lightgreen")
-plot(st_geometry(lignes_haies), add = TRUE, col = "darkgreen", lwd = 3)
-```
-
-## Calcul des zones de protection
-
-Une fois les haies détectées, vous pouvez calculer les zones de protection:
-
-```{r zones-protection, eval = FALSE}
-# Définir la direction du vent (degrés, 0 = Nord, 90 = Est)
-direction_vent <- 270  # Vent d'ouest
-
-# Calculer les zones de vent avec spline à partir des rectangles de haies
-zones <- calculer_zones_vent_spline(
-  haies_rectangles = resultat$haies_rectangles,
-  direction_vent = direction_vent,
-  facteur_hauteur = c(1, 2, 3, 5, 10)
-)
-
-# Rasteriser les zones (facteur H minimum par pixel)
-zones_raster <- rasteriser_zones_gradient_v2(zones, resolution = 2)
-
-# Visualiser
-plot(zones_raster, main = "Zones de protection (multiples de H)")
-plot(st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-```
-
-## Distances aux arbres
-
-Pour une analyse plus fine de l'effet du vent:
-
-```{r distances-arbres, eval = FALSE}
-# Distance simple aux arbres
-dist_arbres <- calculer_distance_arbres(
-  arbres_sf = arbres,
-  champ_bbox = champ,
-  resolution = 2,
-  buffer_arbre = 3,
-  max_distance = 100
-)
-
-visualiser_distance_arbres(dist_arbres, type = "buffer")
-```
+| Paramètre | Rôle | Défaut |
+|-----------|------|--------|
+| `res_dtm` / `res_chm` | résolution DTM / CHM (m) | 1 / 0.25 |
+| `hmin` | hauteur minimale d'un arbre (m) | 1 |
+| `eps_dbscan` / `minPts_dbscan` | regroupement spatial | 6 / 3 |
+| `seuil_aspect` | L/W minimal pour une haie | 6 |
+| `seuil_largeur_max` | largeur max d'une haie (m) | 12 |
 
 ## Bonnes pratiques
 
-1. **Validation terrain**: Validez toujours les détections avec des observations terrain
-2. **Résolution**: Utilisez une résolution fine (0.25-1m) pour capturer les haies étroites
-3. **Saison**: Les données LiDAR de saison végétative (feuilles) donnent de meilleurs résultats
-4. **Paramètres**: Ajustez `eps_dbscan` et `seuil_aspect` selon la densité des arbres
+- Validez toujours les détections sur le terrain.
+- Utilisez une résolution fine (0.25–1 m) pour les haies étroites.
+- Privilégiez un LiDAR de saison végétative (feuilles).
+- Ajustez `eps_dbscan` et `seuil_aspect` selon la densité d'arbres.
 
-## Workflow complet
+## Suite
 
-```{r workflow-complet, eval = FALSE}
-library(covariablechamps)
-library(sf)
-library(terra)
-
-# 1. Charger le champ M2
-champ <- st_read(system.file("extdata", "M2.shp", package = "covariablechamps"))
-
-# 2. Télécharger les données LiDAR
-lidar <- telecharger_lidar_ponctuel(champ)
-
-# 3. Détecter et classifier les haies
-resultat <- extraire_classifier_haies_lidar(
-  nuage_points = lidar$nuage_points,
-  hmin = 2
-)
-
-# 4. Extraire les lignes centrales
-lignes_haies <- extraire_ligne_centrale_haies(resultat$haies_rectangles)
-
-# 5. Calculer les zones de protection
-direction_vent <- 270  # Vent d'ouest
-zones <- calculer_zones_vent_spline(
-  haies_rectangles = resultat$haies_rectangles,
-  direction_vent = direction_vent,
-  facteur_hauteur = c(1, 2, 5, 10)
-)
-
-# 6. Rasteriser et visualiser
-zones_raster <- rasteriser_zones_gradient_v2(zones, resolution = 2)
-plot(zones_raster)
-plot(st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-```
-
-## Références
-
-- Heisler, G.M., Dewalle, D.R. (1988). Effects of windbreak structure on wind flow. Agriculture, Ecosystems & Environment.
-- Brandle, J.R., et al. (2004). Windbreaks in North American Agricultural Systems. Agroforestry Systems.
+Une fois les haies détectées, l'article **Zones de protection des haies
+brise-vent** montre comment construire les demi-lunes de protection, les
+fusionner et produire un gradient `facteur H`.

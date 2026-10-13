@@ -197,9 +197,11 @@ probabilité proche de 0,5 signale une transition.</li>
 <code class="sourceCode R"><span><span class="va">champ</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="st">"mon_champ.shp"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 1. Télécharger les polygones pédologiques + la table des séries</span></span>
+<span><span class="co">#    Source : polygone_pedologie.fgb (jeu de données geoqc)</span></span>
+<span><span class="co">#    https://storage.googleapis.com/geoqc/Pedologie/polygone_pedologie.fgb</span></span>
 <span><span class="va">pedo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/telecharger_pedologie_quebec.html">telecharger_pedologie_quebec</a></span><span class="op">(</span><span class="va">champ</span><span class="op">)</span></span>
-<span><span class="va">polys</span>        <span class="op">&lt;-</span> <span class="va">pedo</span><span class="op">$</span><span class="va">polygones</span></span>
-<span><span class="va">table_series</span> <span class="op">&lt;-</span> <span class="va">pedo</span><span class="op">$</span><span class="va">table_series</span></span>
+<span><span class="va">polys</span>        <span class="op">&lt;-</span> <span class="va">pedo</span><span class="op">$</span><span class="va">polygones</span>        <span class="co"># colonnes : Code.polygone, Appellation.cartographique, ...</span></span>
+<span><span class="va">table_series</span> <span class="op">&lt;-</span> <span class="va">pedo</span><span class="op">$</span><span class="va">table_series</span>     <span class="co"># Code.polygone, Composante, Pourcentage, Sable, Limon, Argile</span></span>
 <span></span>
 <span><span class="co"># 2. Récupérer un MNT LiDAR</span></span>
 <span><span class="va">mnt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/telecharger_lidar.html">telecharger_lidar</a></span><span class="op">(</span><span class="va">champ</span><span class="op">)</span></span>

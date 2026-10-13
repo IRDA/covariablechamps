@@ -9,8 +9,7 @@ texture et de proportions de séries (PPS) incluses dans le package.
 ``` r
 telecharger_pedologie_quebec(
   champ,
-  url_pedologie =
-    "https://storage.googleapis.com/geoqc/Pedologie/couverture_pedologique.fgb",
+  url_pedologie = "https://storage.googleapis.com/geoqc/Pedologie/polygone_pedologie.fgb",
   path_texture = system.file("data", "texture.rds", package = "covariablechamps"),
   path_pps = system.file("data", "couverture_pps.rds", package = "covariablechamps")
 )
@@ -24,7 +23,8 @@ telecharger_pedologie_quebec(
 
 - url_pedologie:
 
-  URL du fichier FlatGeobuf de pédologie (défaut: geoqc).
+  URL du fichier FlatGeobuf de pédologie (défaut:
+  \`polygone_pedologie.fgb\` du jeu de données geoqc).
 
 - path_texture:
 

@@ -136,9 +136,11 @@ barplot(prop.table(tab) * 100, col = c("sandybrown", "steelblue"),
 champ <- st_read("mon_champ.shp")
 
 # 1. Télécharger les polygones pédologiques + la table des séries
+#    Source : polygone_pedologie.fgb (jeu de données geoqc)
+#    https://storage.googleapis.com/geoqc/Pedologie/polygone_pedologie.fgb
 pedo <- telecharger_pedologie_quebec(champ)
-polys        <- pedo$polygones
-table_series <- pedo$table_series
+polys        <- pedo$polygones        # colonnes : Code.polygone, Appellation.cartographique, ...
+table_series <- pedo$table_series     # Code.polygone, Composante, Pourcentage, Sable, Limon, Argile
 
 # 2. Récupérer un MNT LiDAR
 mnt <- telecharger_lidar(champ)

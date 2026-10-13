@@ -5,187 +5,179 @@
 library(covariablechamps)
 library(sf)
 library(terra)
-library(ggplot2)
 ```
 
-## Introduction
+## Principe
 
-L’ombrage projeté par les arbres et les haies sur les parcelles
-agricoles peut avoir un impact significatif sur les cultures. Ce guide
-présente les fonctions du package `covariablechamps` pour calculer et
-visualiser l’ombrage à partir des données LiDAR et de la position du
-soleil.
+L’ombrage projeté est calculé par **lancer de rayons** (*raycasting*)
+sur le Modèle Numérique d’Élévation (MNE), pour chaque position du
+soleil de la journée. On obtient, par pixel :
 
-## Principes de base
+- une **valeur d’ombrage** entre 0 (ombre) et 1 (plein soleil) ;
+- le **nombre d’heures d’ensoleillement**.
 
-Le calcul de l’ombrage repose sur:
+Pour rester reproductible, on simule un champ de 300 m × 300 m bordé
+d’une haie brise-vent au sud, dans un MNE synthétique.
 
-1.  **Le Modèle Numérique d’Élévation (MNE)**: Inclut les arbres et
-    structures
-2.  **La position du soleil**: Azimut et élévation selon la date et
-    l’heure
-3.  **Le raycasting**: Projection des ombres selon l’angle du soleil
-
-## Chargement du champ M2
-
-Le package inclut un champ d’exemple (`M2`) situé au Québec.
+## Un MNE synthétique avec une haie
 
 ``` r
 
-champ <- st_read(system.file("extdata", "M2.shp", package = "covariablechamps"))
-#> Reading layer `M2' from data source 
-#>   `/home/runner/work/_temp/Library/covariablechamps/extdata/M2.shp' 
-#>   using driver `ESRI Shapefile'
-#> Simple feature collection with 1 feature and 65 fields
-#> Geometry type: POLYGON
-#> Dimension:     XY
-#> Bounding box:  xmin: -71.06012 ymin: 46.64605 xmax: -71.05268 ymax: 46.65118
-#> Geodetic CRS:  WGS 84
+mne <- terra::rast(nrows = 150, ncols = 150,
+                   xmin = 0, xmax = 300, ymin = 0, ymax = 300,
+                   crs = "EPSG:32618")
+xy <- terra::xyFromCell(mne, 1:terra::ncell(mne))
+terrain <- 50 + 2 * sin(xy[, 1] / 60) + 1.5 * cos(xy[, 2] / 50)
+# haie de 15 m le long du bord sud
+haie <- ifelse(xy[, 2] < 8, 15, 0)
+terra::values(mne) <- terrain + haie
+names(mne) <- "MNE"
+
+champ <- st_as_sf(st_sfc(
+  st_polygon(list(matrix(c(0, 0, 300, 0, 300, 300, 0, 300, 0, 0),
+                         ncol = 2, byrow = TRUE))),
+  crs = 32618))
+
+terra::plot(mne, col = hcl.colors(100, "Terrain"),
+            main = "MNE synthétique (m) — haie au sud")
+plot(st_geometry(champ), add = TRUE, border = "white", lwd = 2)
 ```
 
-## Téléchargement du MNE (Modèle Numérique d’Élévation)
+![](ombrage_files/figure-html/mne-1.png)
 
-Le MNE inclut les arbres et permet de calculer les ombres projetées.
+## Ombrage au solstice d’été
 
-**Note**: Le téléchargement peut prendre quelques minutes.
-
-``` r
-
-# Télécharger le MNE (avec arbres)
-mne <- telecharger_lidar(
-  polygone = champ,
-  mne = TRUE
-)
-
-plot(mne, main = "MNE (Modèle Numérique d'Élévation)",
-     col = hcl.colors(100, "Terrain"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-```
-
-![](ombrage_files/figure-html/telecharger-mne-1.png)
-
-## Téléchargement du MNT (Modèle Numérique de Terrain)
-
-Le MNT est le terrain sans les arbres (sol nu).
-
-``` r
-
-mnt <- telecharger_lidar(
-  polygone = champ,
-  mne = FALSE
-)
-
-plot(mnt, main = "MNT (Modèle Numérique de Terrain)",
-     col = hcl.colors(100, "Terrain"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-```
-
-![](ombrage_files/figure-html/telecharger-mnt-1.png)
-
-## Calcul de l’ombrage
-
-Pour calculer l’ombrage à une date donnée:
+`zscale` exagère (ou atténue) la hauteur verticale pour ajuster la
+longueur des ombres ; `max_distance` limite la portée du lancer de
+rayons.
 
 ``` r
 
 ombrage <- calculer_ombrage(
   polygone = champ,
   date = "2024-06-21",
-  intervalle_heures = 1
+  intervalle_heures = 1,
+  mne = mne,
+  zscale = 2,
+  max_distance = 150
 )
 
-plot(ombrage$ombrage_moyen, main = "Ombrage moyen (21 juin 2024)",
-     col = grey(100:0 / 100))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
+par(mfrow = c(1, 3), mar = c(2, 2, 3, 2))
+terra::plot(ombrage$ombrage_par_heure[[1]], main = names(ombrage$ombrage_par_heure)[1],
+            col = grey(100:0 / 100))
+terra::plot(ombrage$ombrage_par_heure[[4]], main = names(ombrage$ombrage_par_heure)[4],
+            col = grey(100:0 / 100))
+terra::plot(ombrage$ombrage_moyen, main = "Ombrage moyen",
+            col = grey(100:0 / 100))
 ```
 
-![](ombrage_files/figure-html/ombrage-simple-1.png)
-
-### Paramètres importants
-
-- `date`: Date au format “YYYY-MM-DD”
-- `intervalle_heures`: Intervalle de temps entre les calculs
-- `zscale`: Facteur d’échelle vertical (1 = mètres)
+![](ombrage_files/figure-html/ombrage-ete-1.png)
 
 ## Heures d’ensoleillement
 
-Le nombre d’heures d’ensoleillement par pixel:
+``` r
+
+terra::plot(ombrage$heures_ensoleillement,
+            main = "Heures d'ensoleillement (21 juin)",
+            col = hcl.colors(100, "YlOrRd"))
+plot(st_geometry(champ), add = TRUE, border = "grey40")
+```
+
+![](ombrage_files/figure-html/heures-1.png)
 
 ``` r
 
-plot(ombrage$heures_ensoleillement, 
-     main = "Heures d'ensoleillement (21 juin 2024)",
-     col = hcl.colors(100, "YlOrRd"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
+
+# Position du soleil au fil de la journée
+info <- ombrage$info_soleil
+plot(seq_len(nrow(info)), info$altitude, type = "b", pch = 19,
+     xlab = "Pas de temps", ylab = "Altitude du soleil (°)",
+     main = "Course du soleil (21 juin)")
+abline(h = 0, lty = 2, col = "red")
 ```
 
-![](ombrage_files/figure-html/heures-ensoleillement-1.png)
+![](ombrage_files/figure-html/heures-2.png)
 
-## Comparaison été vs hiver
+## Été vs hiver
 
-L’ombrage varie considérablement selon la saison:
+Le même MNE, deux dates : l’ombre est bien plus longue et basse en
+hiver.
 
 ``` r
 
-# Été
-ombrage_ete <- calculer_ombrage(
-  polygone = champ,
-  date = "2024-06-21",
-  intervalle_heures = 2
-)
+hiver <- calculer_ombrage(champ, date = "2024-12-21", intervalle_heures = 2,
+                          mne = mne, zscale = 2, max_distance = 150)
 
-# Hiver
-ombrage_hiver <- calculer_ombrage(
-  polygone = champ,
-  date = "2024-12-21",
-  intervalle_heures = 2
-)
-
-par(mfrow = c(1, 2), mar = c(3, 3, 3, 3))
-
-plot(ombrage_ete$ombrage_moyen, main = "Ombrage été (21 juin)",
-     col = grey(100:0 / 100))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-
-plot(ombrage_hiver$ombrage_moyen, main = "Ombrage hiver (21 décembre)",
-     col = grey(100:0 / 100))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
+par(mfrow = c(1, 2), mar = c(2, 2, 3, 2))
+terra::plot(ombrage$heures_ensoleillement, main = "Heures de soleil — été",
+            col = hcl.colors(100, "YlOrRd"))
+terra::plot(hiver$heures_ensoleillement, main = "Heures de soleil — hiver",
+            col = hcl.colors(100, "YlOrRd"))
 ```
 
-![](ombrage_files/figure-html/comparaison-saison-1.png)
+![](ombrage_files/figure-html/saisons-1.png)
 
-## Calcul sur une période
+## Sur une période
 
-La fonction
 [`calculer_ombrage_periode()`](https://cedricbouffard.github.io/covariablechamps/reference/calculer_ombrage_periode.md)
-calcule l’ombrage moyen sur une période:
+agrège plusieurs jours et fournit moyenne, min et max.
 
 ``` r
 
-resultat <- calculer_ombrage_periode(
+periode <- calculer_ombrage_periode(
   polygone = champ,
   date_debut = "2024-06-01",
   date_fin = "2024-06-30",
-  intervalle_jours = 7
+  intervalle_jours = 10,
+  intervalle_heures = 2,
+  mne = mne, zscale = 2, max_distance = 150
 )
 
-par(mfrow = c(1, 2), mar = c(3, 3, 3, 3))
-
-plot(resultat$ombrage_moyen_periode, 
-     main = "Ombrage moyen (juin 2024)",
-     col = grey(100:0 / 100))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
-
-plot(resultat$heures_ensoleillement_moyen,
-     main = "Heures d'ensoleillement moy. (juin 2024)",
-     col = hcl.colors(100, "YlOrRd"))
-plot(sf::st_geometry(champ), add = TRUE, border = "black", lwd = 2)
+par(mfrow = c(1, 3), mar = c(2, 2, 3, 2))
+terra::plot(periode$heures_ensoleillement_moyen, main = "Moyenne / jour",
+            col = hcl.colors(100, "YlOrRd"))
+terra::plot(periode$heures_ensoleillement_min, main = "Minimum (pire cas)",
+            col = hcl.colors(100, "YlOrRd"))
+terra::plot(periode$heures_ensoleillement_max, main = "Maximum (meilleur cas)",
+            col = hcl.colors(100, "YlOrRd"))
 ```
 
-![](ombrage_files/figure-html/ombrage-periode-1.png)
+![](ombrage_files/figure-html/periode-1.png)
 
-## Applications
+## Vignette de synthèse
 
-- **Cultures sensibles**: Identifier les zones à faible ensoleillement
-- **Serres**: Planifier l’emplacement selon l’ombrage naturel
-- **Arbres fruitiers**: Estimer l’ombre des haies sur les cultures
+``` r
+
+calculer_ombrage_visualisation(ombrage, titre = "Ombrage — 21 juin 2024")
+```
+
+![](ombrage_files/figure-html/synthese-1.png)
+
+## Avec un MNE LiDAR réel
+
+``` r
+
+champ <- st_read("mon_champ.shp")
+
+# calculer_ombrage() télécharge le MNE automatiquement si non fourni
+ombrage <- calculer_ombrage(
+  polygone = champ,
+  date = "2024-06-21",
+  intervalle_heures = 1,
+  zscale = 1,            # 1 = échelle réelle
+  max_distance = 1000
+)
+```
+
+## À retenir
+
+| Paramètre              | Effet                                          |
+|------------------------|------------------------------------------------|
+| `date`                 | Position du soleil (azimut, altitude)          |
+| `intervalle_heures`    | Pas de temps du calcul                         |
+| `zscale`               | Longueur des ombres (exagération verticale)    |
+| `max_distance`         | Portée du lancer de rayons                     |
+| `seuil_ensoleillement` | Seuil pour compter une heure comme ensoleillée |
+
+Pour un paysage réel, on utilise `telecharger_lidar(mne = TRUE)` afin
+d’obtenir un MNE incluant arbres et bâtiments.

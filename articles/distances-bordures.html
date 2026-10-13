@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Analyse des Distances aux Bordures selon l'Orientation du Champ • covariablechamps</title>
+<title>Distances aux bordures selon l'orientation du champ • covariablechamps</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Analyse des Distances aux Bordures selon l'Orientation du Champ">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Distances aux bordures selon l'orientation du champ">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -62,7 +62,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Analyse des Distances aux Bordures selon l'Orientation du Champ</h1>
+      <h1>Distances aux bordures selon l'orientation du champ</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/cedricbouffard/covariablechamps/blob/main/vignettes/distances-bordures.Rmd" class="external-link"><code>vignettes/distances-bordures.Rmd</code></a></small>
@@ -71,326 +71,221 @@
 
     
     
-<div class="section level2">
-<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
-</h2>
-<p>Dans l’analyse des parcelles agricoles, il est souvent important de
-distinguer les effets de bordure selon leur orientation par rapport à
-l’axe principal du champ. Par exemple:</p>
-<ul>
-<li>Les <strong>haies brise-vent</strong> ont un impact différent selon
-qu’elles sont placées sur les côtés longs ou courts du champ</li>
-<li>L’<strong>ombrage</strong> des arbres affecte principalement les
-bordures orientées nord-sud</li>
-<li>Les <strong>gradients de rendement</strong> peuvent varier selon la
-direction</li>
-</ul>
-<p>Ce package fournit des outils pour calculer et classifier les
-distances aux bordures en distinguant:</p>
-<ul>
-<li>
-<strong>Distance sens long</strong>: composante de la distance dans
-le sens de la longueur du champ</li>
-<li>
-<strong>Distance sens large</strong>: composante de la distance dans
-le sens de la largeur du champ</li>
-</ul>
-</div>
-<div class="section level2">
-<h2 id="installation-et-chargement">Installation et chargement<a class="anchor" aria-label="anchor" href="#installation-et-chargement"></a>
-</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://cedricbouffard.github.io/covariablechamps">covariablechamps</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rspatial.org/" class="external-link">terra</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="pourquoi-distinguer-longueur-et-largeur">Pourquoi distinguer longueur et largeur ?<a class="anchor" aria-label="anchor" href="#pourquoi-distinguer-longueur-et-largeur"></a>
+</h2>
+<p>Pour une parcelle allongée, un point peut être « près du bord » dans
+le sens de la <strong>largeur</strong> (côté long) tout en étant loin du
+bord dans le sens de la <strong>longueur</strong> (extrémité).
+Distinguer ces deux composantes est utile pour :</p>
+<ul>
+<li>positionner des haies brise-vent sur les bons côtés ;</li>
+<li>modéliser les gradients de rendement de bordure ;</li>
+<li>identifier les zones d’ombrage et de protection.</li>
+</ul>
 </div>
 <div class="section level2">
-<h2 id="exemple-de-base">Exemple de base<a class="anchor" aria-label="anchor" href="#exemple-de-base"></a>
+<h2 id="un-champ-dexemple">Un champ d’exemple<a class="anchor" aria-label="anchor" href="#un-champ-dexemple"></a>
 </h2>
-<div class="section level3">
-<h3 id="créer-ou-charger-un-champ">Créer ou charger un champ<a class="anchor" aria-label="anchor" href="#cr%C3%A9er-ou-charger-un-champ"></a>
-</h3>
+<p>On construit un rectangle de 300 m × 100 m orienté à 30°.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Charger un champ depuis un fichier</span></span>
-<span><span class="va">champ</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="st">"chemin/vers/champ.shp"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">angle</span> <span class="op">&lt;-</span> <span class="fl">30</span> <span class="op">*</span> <span class="va">pi</span> <span class="op">/</span> <span class="fl">180</span></span>
+<span><span class="va">corners</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">150</span>, <span class="op">-</span><span class="fl">50</span>, <span class="fl">150</span>, <span class="op">-</span><span class="fl">50</span>, <span class="fl">150</span>, <span class="fl">50</span>, <span class="op">-</span><span class="fl">150</span>, <span class="fl">50</span>, <span class="op">-</span><span class="fl">150</span>, <span class="op">-</span><span class="fl">50</span><span class="op">)</span>,</span>
+<span>                  ncol <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">R</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">cos</a></span><span class="op">(</span><span class="va">angle</span><span class="op">)</span>, <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">angle</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">angle</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">cos</a></span><span class="op">(</span><span class="va">angle</span><span class="op">)</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">corners</span> <span class="op">&lt;-</span> <span class="va">corners</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/transpose.html" class="external-link">t</a></span><span class="op">(</span><span class="va">R</span><span class="op">)</span> <span class="op">+</span> <span class="fl">500</span></span>
 <span></span>
-<span><span class="co"># Ou créer un champ d'exemple (rectangle 300m x 100m orienté à 30°)</span></span>
-<span><span class="va">angle_rad</span> <span class="op">&lt;-</span> <span class="fl">30</span> <span class="op">*</span> <span class="va">pi</span> <span class="op">/</span> <span class="fl">180</span></span>
-<span><span class="va">L</span> <span class="op">&lt;-</span> <span class="fl">300</span>  <span class="co"># Longueur</span></span>
-<span><span class="va">W</span> <span class="op">&lt;-</span> <span class="fl">100</span>  <span class="co"># Largeur</span></span>
-<span><span class="va">cx</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
-<span><span class="va">cy</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
+<span><span class="va">champ</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/sf.html" class="external-link">st_sf</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span>, geometry <span class="op">=</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/sfc.html" class="external-link">st_sfc</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st.html" class="external-link">st_polygon</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">corners</span><span class="op">)</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">32618</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">corners</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  <span class="op">-</span><span class="va">L</span><span class="op">/</span><span class="fl">2</span>, <span class="op">-</span><span class="va">W</span><span class="op">/</span><span class="fl">2</span>,</span>
-<span>   <span class="va">L</span><span class="op">/</span><span class="fl">2</span>, <span class="op">-</span><span class="va">W</span><span class="op">/</span><span class="fl">2</span>,</span>
-<span>   <span class="va">L</span><span class="op">/</span><span class="fl">2</span>,  <span class="va">W</span><span class="op">/</span><span class="fl">2</span>,</span>
-<span>  <span class="op">-</span><span class="va">L</span><span class="op">/</span><span class="fl">2</span>,  <span class="va">W</span><span class="op">/</span><span class="fl">2</span>,</span>
-<span>  <span class="op">-</span><span class="va">L</span><span class="op">/</span><span class="fl">2</span>, <span class="op">-</span><span class="va">W</span><span class="op">/</span><span class="fl">2</span></span>
-<span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">R</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">cos</a></span><span class="op">(</span><span class="va">angle_rad</span><span class="op">)</span>, <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">angle_rad</span><span class="op">)</span>,</span>
-<span>              <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">angle_rad</span><span class="op">)</span>,  <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">cos</a></span><span class="op">(</span><span class="va">angle_rad</span><span class="op">)</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">corners_rot</span> <span class="op">&lt;-</span> <span class="va">corners</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/transpose.html" class="external-link">t</a></span><span class="op">(</span><span class="va">R</span><span class="op">)</span></span>
-<span><span class="va">corners_rot</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">corners_rot</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">cx</span></span>
-<span><span class="va">corners_rot</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">corners_rot</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="va">cy</span></span>
-<span></span>
-<span><span class="va">poly</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st.html" class="external-link">st_polygon</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">corners_rot</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">champ</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/sf.html" class="external-link">st_sf</a></span><span class="op">(</span></span>
-<span>  id <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  geometry <span class="op">=</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/sfc.html" class="external-link">st_sfc</a></span><span class="op">(</span><span class="va">poly</span>, crs <span class="op">=</span> <span class="fl">32618</span><span class="op">)</span>  <span class="co"># UTM zone 18N</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">champ</span>, fill <span class="op">=</span> <span class="st">"lightgreen"</span>, colour <span class="op">=</span> <span class="st">"darkgreen"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Champ d'exemple (300 m × 100 m, orienté à 30°)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="distances-bordures_files/figure-html/champ-1.png" class="r-plt" alt="" width="768"></p>
 </div>
-<div class="section level3">
-<h3 id="calculer-lorientation">Calculer l’orientation<a class="anchor" aria-label="anchor" href="#calculer-lorientation"></a>
-</h3>
-<p>Avant de calculer les distances, voyons l’orientation détectée:</p>
+<div class="section level2">
+<h2 id="orientation-du-champ">Orientation du champ<a class="anchor" aria-label="anchor" href="#orientation-du-champ"></a>
+</h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">orientation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculer_orientation_champ.html">calculer_orientation_champ</a></span><span class="op">(</span><span class="va">champ</span>, methode <span class="op">=</span> <span class="st">"mbr"</span><span class="op">)</span></span>
+<span><span class="va">orientation</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"angle"</span>, <span class="st">"angle_perpendiculaire"</span>, <span class="st">"longueur"</span>, <span class="st">"largeur"</span>,</span>
+<span>              <span class="st">"rapport_aspect"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; $angle</span></span>
+<span><span class="co">#&gt; [1] 120</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $angle_perpendiculaire</span></span>
+<span><span class="co">#&gt; [1] 30</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $longueur</span></span>
+<span><span class="co">#&gt; [1] 299.1817</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $largeur</span></span>
+<span><span class="co">#&gt; [1] 99.72942</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $rapport_aspect</span></span>
+<span><span class="co">#&gt; [1] 2.999934</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Angle principal:"</span>, <span class="fu"><a href="https://rspatial.github.io/terra/reference/math-generics.html" class="external-link">round</a></span><span class="op">(</span><span class="va">orientation</span><span class="op">$</span><span class="va">angle</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"degrés\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Angle perpendiculaire:"</span>, <span class="fu"><a href="https://rspatial.github.io/terra/reference/math-generics.html" class="external-link">round</a></span><span class="op">(</span><span class="va">orientation</span><span class="op">$</span><span class="va">angle_perpendiculaire</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"degrés\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Longueur:"</span>, <span class="fu"><a href="https://rspatial.github.io/terra/reference/math-generics.html" class="external-link">round</a></span><span class="op">(</span><span class="va">orientation</span><span class="op">$</span><span class="va">longueur</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"m\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Largeur:"</span>, <span class="fu"><a href="https://rspatial.github.io/terra/reference/math-generics.html" class="external-link">round</a></span><span class="op">(</span><span class="va">orientation</span><span class="op">$</span><span class="va">largeur</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"m\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Rapport d'aspect:"</span>, <span class="fu"><a href="https://rspatial.github.io/terra/reference/math-generics.html" class="external-link">round</a></span><span class="op">(</span><span class="va">orientation</span><span class="op">$</span><span class="va">rapport_aspect</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Visualiser l'orientation avec le MBR (Minimum Bounding Rectangle)</span></span>
 <span><span class="fu"><a href="../reference/visualiser_orientation.html">visualiser_orientation</a></span><span class="op">(</span><span class="va">champ</span>, <span class="va">orientation</span><span class="op">)</span></span></code></pre></div>
+<p><img src="distances-bordures_files/figure-html/orientation-1.png" class="r-plt" alt="" width="768"></p>
 </div>
-<div class="section level3">
-<h3 id="calculer-les-distances-aux-bordures">Calculer les distances aux bordures<a class="anchor" aria-label="anchor" href="#calculer-les-distances-aux-bordures"></a>
-</h3>
+<div class="section level2">
+<h2 id="distances-longueur-largeur-minimale">Distances longueur / largeur / minimale<a class="anchor" aria-label="anchor" href="#distances-longueur-largeur-minimale"></a>
+</h2>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Calculer les distances avec une résolution de 2m</span></span>
-<span><span class="va">dist_bordures</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculer_distance_bordures_orientee.html">calculer_distance_bordures_orientee</a></span><span class="op">(</span></span>
-<span>  champ_poly <span class="op">=</span> <span class="va">champ</span>,</span>
-<span>  resolution <span class="op">=</span> <span class="fl">2</span>,  <span class="co"># 2 mètres par pixel</span></span>
-<span>  buffer <span class="op">=</span> <span class="fl">50</span>      <span class="co"># Zone tampon de 50m pour les calculs</span></span>
-<span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">dist</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculer_distance_bordures_orientee.html">calculer_distance_bordures_orientee</a></span><span class="op">(</span>champ_poly <span class="op">=</span> <span class="va">champ</span>,</span>
+<span>                                            resolution <span class="op">=</span> <span class="fl">5</span>, buffer <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Afficher un résumé</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Rasters créés:\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"- distance_long:"</span>, <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">ncell</a></span><span class="op">(</span><span class="va">dist_bordures</span><span class="op">$</span><span class="va">distance_long</span><span class="op">)</span>, <span class="st">"cellules\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"- distance_large:"</span>, <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">ncell</a></span><span class="op">(</span><span class="va">dist_bordures</span><span class="op">$</span><span class="va">distance_large</span><span class="op">)</span>, <span class="st">"cellules\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"- distance_min:"</span>, <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">ncell</a></span><span class="op">(</span><span class="va">dist_bordures</span><span class="op">$</span><span class="va">distance_min</span><span class="op">)</span>, <span class="st">"cellules\n"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="visualiser-les-distances">Visualiser les distances<a class="anchor" aria-label="anchor" href="#visualiser-les-distances"></a>
-</h3>
+<span><span class="va">plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/visualiser_distances_bordures.html">visualiser_distances_bordures</a></span><span class="op">(</span><span class="va">dist</span>, type <span class="op">=</span> <span class="st">"comparaison"</span><span class="op">)</span></span>
+<span><span class="va">plots</span><span class="op">$</span><span class="va">long</span></span></code></pre></div>
+<p><img src="distances-bordures_files/figure-html/distances-1.png" class="r-plt" alt="" width="768"></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Visualiser les trois distances</span></span>
-<span><span class="va">plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/visualiser_distances_bordures.html">visualiser_distances_bordures</a></span><span class="op">(</span><span class="va">dist_bordures</span>, type <span class="op">=</span> <span class="st">"comparaison"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Avec patchwork pour arranger les plots</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
-<span><span class="va">plots</span><span class="op">$</span><span class="va">long</span> <span class="op">+</span> <span class="va">plots</span><span class="op">$</span><span class="va">large</span> <span class="op">+</span> <span class="va">plots</span><span class="op">$</span><span class="va">min</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span>ncol <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Distances aux bordures selon l'orientation"</span><span class="op">)</span></span></code></pre></div>
-<p>Chaque visualisation montre:</p>
-<ul>
-<li><p><strong>Distance sens long</strong>: La composante de la distance
-projetée sur l’axe principal (longueur). Les valeurs faibles (bleu) sont
-proches des bordures perpendiculaires à l’axe long.</p></li>
-<li><p><strong>Distance sens large</strong>: La composante projetée sur
-l’axe perpendiculaire (largeur). Les valeurs faibles sont proches des
-côtés longs du champ.</p></li>
-<li><p><strong>Distance minimum</strong>: La distance euclidienne
-classique à la bordure la plus proche.</p></li>
-</ul>
-</div>
-</div>
-<div class="section level2">
-<h2 id="classification-des-distances">Classification des distances<a class="anchor" aria-label="anchor" href="#classification-des-distances"></a>
-</h2>
-<div class="section level3">
-<h3 id="définir-des-classes">Définir des classes<a class="anchor" aria-label="anchor" href="#d%C3%A9finir-des-classes"></a>
-</h3>
-<p>Pour faciliter l’analyse, vous pouvez classifier les distances en
-catégories:</p>
+<code class="sourceCode R"><span><span class="va">plots</span><span class="op">$</span><span class="va">large</span></span></code></pre></div>
+<p><img src="distances-bordures_files/figure-html/distances-2.png" class="r-plt" alt="" width="768"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Classification avec les seuils par défaut</span></span>
-<span><span class="va">classes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/classifier_distances_bordures.html">classifier_distances_bordures</a></span><span class="op">(</span><span class="va">dist_bordures</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Afficher la table de correspondance</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">classes</span><span class="op">$</span><span class="va">table_classes</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="seuils-personnalisés">Seuils personnalisés<a class="anchor" aria-label="anchor" href="#seuils-personnalis%C3%A9s"></a>
-</h3>
-<p>Adaptez les seuils à votre contexte:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Pour un petit champ avec haies brise-vent</span></span>
-<span><span class="va">classes_haie</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/classifier_distances_bordures.html">classifier_distances_bordures</a></span><span class="op">(</span></span>
-<span>  <span class="va">dist_bordures</span>,</span>
-<span>  seuils_long <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">15</span>, <span class="fl">30</span>, <span class="fl">60</span><span class="op">)</span>,      <span class="co"># Effet haie ~15m</span></span>
-<span>  seuils_large <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">40</span><span class="op">)</span>,     <span class="co"># Effet ombrage ~10m</span></span>
-<span>  labels_long <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"zone_haie"</span>, <span class="st">"influence_haie"</span>, <span class="st">"transition"</span>, <span class="st">"intermediaire"</span>, <span class="st">"centre"</span><span class="op">)</span>,</span>
-<span>  labels_large <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ombre_directe"</span>, <span class="st">"ombre_diffuse"</span>, <span class="st">"transition"</span>, <span class="st">"plein_soleil"</span>, <span class="st">"centre"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Visualiser</span></span>
-<span><span class="fu"><a href="../reference/visualiser_classes_bordures.html">visualiser_classes_bordures</a></span><span class="op">(</span><span class="va">classes_haie</span>, type <span class="op">=</span> <span class="st">"long"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/visualiser_classes_bordures.html">visualiser_classes_bordures</a></span><span class="op">(</span><span class="va">classes_haie</span>, type <span class="op">=</span> <span class="st">"large"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="interprétation-des-classes-combinées">Interprétation des classes combinées<a class="anchor" aria-label="anchor" href="#interpr%C3%A9tation-des-classes-combin%C3%A9es"></a>
-</h3>
-<p>La classe combinée encode les deux dimensions:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># La classe combinée = (classe_long × 10) + classe_large</span></span>
-<span><span class="co"># Exemple: code 23 = classe 2 en long, classe 3 en large</span></span>
-<span></span>
-<span><span class="co"># Visualiser</span></span>
-<span><span class="fu"><a href="../reference/visualiser_classes_bordures.html">visualiser_classes_bordures</a></span><span class="op">(</span><span class="va">classes</span>, type <span class="op">=</span> <span class="st">"combinee"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Extraire les statistiques par classe</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">classes</span><span class="op">$</span><span class="va">classe_combinee</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="cas-dusage-points-spécifiques">Cas d’usage: Points spécifiques<a class="anchor" aria-label="anchor" href="#cas-dusage-points-sp%C3%A9cifiques"></a>
-</h2>
-<p>Vous pouvez aussi calculer les distances pour des points spécifiques
-plutôt que pour tout le raster:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Créer des points d'échantillonnage</span></span>
-<span><span class="va">points_echantillon</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_sample.html" class="external-link">st_sample</a></span><span class="op">(</span><span class="va">champ</span>, size <span class="op">=</span> <span class="fl">50</span>, type <span class="op">=</span> <span class="st">"regular"</span><span class="op">)</span></span>
-<span><span class="va">points_echantillon</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">points_echantillon</span><span class="op">)</span></span>
-<span><span class="va">points_echantillon</span><span class="op">$</span><span class="va">id</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">points_echantillon</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Calculer les distances</span></span>
-<span><span class="va">dist_points</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculer_distance_bordures_orientee.html">calculer_distance_bordures_orientee</a></span><span class="op">(</span></span>
-<span>  points_sf <span class="op">=</span> <span class="va">points_echantillon</span>,</span>
-<span>  champ_poly <span class="op">=</span> <span class="va">champ</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Les distances sont dans le sf retourné</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">dist_points</span><span class="op">$</span><span class="va">points</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"distance_long"</span>, <span class="st">"distance_large"</span>, <span class="st">"distance_min"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="intégration-avec-dautres-analyses">Intégration avec d’autres analyses<a class="anchor" aria-label="anchor" href="#int%C3%A9gration-avec-dautres-analyses"></a>
-</h2>
-<div class="section level3">
-<h3 id="avec-les-données-de-haies">Avec les données de haies<a class="anchor" aria-label="anchor" href="#avec-les-donn%C3%A9es-de-haies"></a>
-</h3>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Si vous avez extrait les haies avec extraire_classifier_haies_lidar()</span></span>
-<span><span class="co"># Vous pouvez combiner les analyses</span></span>
-<span></span>
-<span><span class="co"># 1. Calculer les zones de vent des haies</span></span>
-<span><span class="co"># zones_vent &lt;- calculer_zones_vent_spline(haies_rectangles, direction_vent = 225)</span></span>
-<span></span>
-<span><span class="co"># 2. Calculer les distances aux bordures</span></span>
-<span><span class="va">dist_bordures</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculer_distance_bordures_orientee.html">calculer_distance_bordures_orientee</a></span><span class="op">(</span>champ_poly <span class="op">=</span> <span class="va">champ</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 3. Combiner les informations</span></span>
-<span><span class="co"># - Zones près des haies (distance_large faible) ET sous le vent</span></span>
-<span><span class="co"># - Zones au centre du champ</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="export-des-résultats">Export des résultats<a class="anchor" aria-label="anchor" href="#export-des-r%C3%A9sultats"></a>
-</h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Sauvegarder les rasters</span></span>
-<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/writeRaster.html" class="external-link">writeRaster</a></span><span class="op">(</span><span class="va">dist_bordures</span><span class="op">$</span><span class="va">distance_long</span>, <span class="st">"output/distance_long.tif"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/writeRaster.html" class="external-link">writeRaster</a></span><span class="op">(</span><span class="va">dist_bordures</span><span class="op">$</span><span class="va">distance_large</span>, <span class="st">"output/distance_large.tif"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/writeRaster.html" class="external-link">writeRaster</a></span><span class="op">(</span><span class="va">dist_bordures</span><span class="op">$</span><span class="va">distance_min</span>, <span class="st">"output/distance_min.tif"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Sauvegarder les classes</span></span>
-<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/writeRaster.html" class="external-link">writeRaster</a></span><span class="op">(</span><span class="va">classes</span><span class="op">$</span><span class="va">classe_long</span>, <span class="st">"output/classe_long.tif"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/writeRaster.html" class="external-link">writeRaster</a></span><span class="op">(</span><span class="va">classes</span><span class="op">$</span><span class="va">classe_combinee</span>, <span class="st">"output/classe_combinee.tif"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Exporter la table de correspondance</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">classes</span><span class="op">$</span><span class="va">table_classes</span>, <span class="st">"output/table_classes.csv"</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="considérations-techniques">Considérations techniques<a class="anchor" aria-label="anchor" href="#consid%C3%A9rations-techniques"></a>
-</h2>
-<div class="section level3">
-<h3 id="performance">Performance<a class="anchor" aria-label="anchor" href="#performance"></a>
-</h3>
-<p>Le temps de calcul dépend de:</p>
+<code class="sourceCode R"><span><span class="va">plots</span><span class="op">$</span><span class="va">min</span></span></code></pre></div>
+<p><img src="distances-bordures_files/figure-html/distances-3.png" class="r-plt" alt="" width="768"></p>
 <ul>
-<li>La <strong>résolution</strong>: Une résolution de 1m génère 4× plus
-de cellules qu’une résolution de 2m</li>
-<li>La <strong>taille du champ</strong>: Linéaire avec la
-superficie</li>
-<li>Le <strong>nombre de points</strong>: Si vous utilisez des points
-plutôt qu’un raster</li>
+<li>
+<strong>Longueur</strong> : composante projetée sur l’axe long —
+faible près des extrémités.</li>
+<li>
+<strong>Largeur</strong> : composante projetée sur l’axe court —
+faible le long des côtés longs.</li>
+<li>
+<strong>Minimale</strong> : distance euclidienne à la bordure la
+plus proche.</li>
 </ul>
-<p>Pour les grands champs, commencez avec une résolution grossière
-(5-10m) pour tester, puis affinez.</p>
 </div>
-<div class="section level3">
-<h3 id="choix-des-seuils-de-classification">Choix des seuils de classification<a class="anchor" aria-label="anchor" href="#choix-des-seuils-de-classification"></a>
-</h3>
-<p>Les seuils par défaut sont:</p>
+<div class="section level2">
+<h2 id="classer-les-distances">Classer les distances<a class="anchor" aria-label="anchor" href="#classer-les-distances"></a>
+</h2>
+<p><code><a href="../reference/classifier_distances_bordures.html">classifier_distances_bordures()</a></code> découpe chaque
+composante en classes (bordures, zones tampon, centre) selon des seuils
+ajustables.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">classes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/classifier_distances_bordures.html">classifier_distances_bordures</a></span><span class="op">(</span></span>
+<span>  <span class="va">dist</span>,</span>
+<span>  seuils_long  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">60</span>, <span class="fl">120</span><span class="op">)</span>,</span>
+<span>  seuils_large <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">30</span>, <span class="fl">50</span><span class="op">)</span>,</span>
+<span>  labels_long  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"extremite"</span>, <span class="st">"proche"</span>, <span class="st">"milieu"</span>, <span class="st">"centre"</span><span class="op">)</span>,</span>
+<span>  labels_large <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bord"</span>, <span class="st">"tampon"</span>, <span class="st">"interieur"</span>, <span class="st">"centre"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">classes</span><span class="op">$</span><span class="va">classe_long</span>,  main <span class="op">=</span> <span class="st">"Classes - longueur"</span>,</span>
+<span>            col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fl">4</span>, <span class="st">"RdYlGn"</span>, rev <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">classes</span><span class="op">$</span><span class="va">classe_large</span>, main <span class="op">=</span> <span class="st">"Classes - largeur"</span>,</span>
+<span>            col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fl">4</span>, <span class="st">"RdYlGn"</span>, rev <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="distances-bordures_files/figure-html/classes-1.png" class="r-plt" alt="" width="768"></p>
+<p>La classe combinée encode les deux dimensions en un seul code
+(<code>classe_long × 10 + classe_large</code>), pratique pour stratifier
+un échantillonnage.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">classes</span><span class="op">$</span><span class="va">classe_combinee</span>, main <span class="op">=</span> <span class="st">"Classes combinées (long + large)"</span>,</span>
+<span>            col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fl">16</span>, <span class="st">"Viridis"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="distances-bordures_files/figure-html/classe-combinee-1.png" class="r-plt" alt="" width="768"></p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">classes</span><span class="op">$</span><span class="va">table_classes</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   classe_long classe_large code_combine label_long label_large</span></span>
+<span><span class="co">#&gt; 1           1            1           11  extremite        bord</span></span>
+<span><span class="co">#&gt; 2           2            1           21     proche        bord</span></span>
+<span><span class="co">#&gt; 3           3            1           31     milieu        bord</span></span>
+<span><span class="co">#&gt; 4           4            1           41     centre        bord</span></span>
+<span><span class="co">#&gt; 5           1            2           12  extremite      tampon</span></span>
+<span><span class="co">#&gt; 6           2            2           22     proche      tampon</span></span>
+<span><span class="co">#&gt;        label_combine</span></span>
+<span><span class="co">#&gt; 1   extremite + bord</span></span>
+<span><span class="co">#&gt; 2      proche + bord</span></span>
+<span><span class="co">#&gt; 3      milieu + bord</span></span>
+<span><span class="co">#&gt; 4      centre + bord</span></span>
+<span><span class="co">#&gt; 5 extremite + tampon</span></span>
+<span><span class="co">#&gt; 6    proche + tampon</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="points-déchantillonnage">Points d’échantillonnage<a class="anchor" aria-label="anchor" href="#points-d%C3%A9chantillonnage"></a>
+</h2>
+<p>On peut aussi calculer les distances pour des points précis plutôt
+que sur une grille.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_sample.html" class="external-link">st_sample</a></span><span class="op">(</span><span class="va">champ</span>, size <span class="op">=</span> <span class="fl">40</span>, type <span class="op">=</span> <span class="st">"regular"</span><span class="op">)</span></span>
+<span><span class="va">pts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">pts</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">res_pts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculer_distance_bordures_orientee.html">calculer_distance_bordures_orientee</a></span><span class="op">(</span>points_sf <span class="op">=</span> <span class="va">pts</span>, champ_poly <span class="op">=</span> <span class="va">champ</span><span class="op">)</span></span>
+<span><span class="va">res_pts</span><span class="op">$</span><span class="va">points</span></span>
+<span><span class="co">#&gt; Simple feature collection with 39 features and 3 fields</span></span>
+<span><span class="co">#&gt; Geometry type: POINT</span></span>
+<span><span class="co">#&gt; Dimension:     XY</span></span>
+<span><span class="co">#&gt; Bounding box:  xmin: 370.1132 ymin: 415.0096 xmax: 643.604 ymax: 606.4531</span></span>
+<span><span class="co">#&gt; Projected CRS: WGS 84 / UTM zone 18N</span></span>
+<span><span class="co">#&gt; First 10 features:</span></span>
+<span><span class="co">#&gt;                            x distance_min distance_long distance_large</span></span>
+<span><span class="co">#&gt; 1  POINT (561.5568 415.0096)     7.154977     54.047163       7.154977</span></span>
+<span><span class="co">#&gt; 2  POINT (588.9058 415.0096)    20.792178     30.426806      20.792178</span></span>
+<span><span class="co">#&gt; 3  POINT (616.2549 415.0096)     6.806439      6.806439      34.429386</span></span>
+<span><span class="co">#&gt; 4  POINT (506.8586 442.3586)     3.500926    114.925049       3.500926</span></span>
+<span><span class="co">#&gt; 5  POINT (534.2077 442.3586)    17.138126     91.304719      17.138126</span></span>
+<span><span class="co">#&gt; 6  POINT (561.5568 442.3586)    30.775332     67.684379      30.775332</span></span>
+<span><span class="co">#&gt; 7  POINT (588.9058 442.3586)    44.064029     44.064029      44.412544</span></span>
+<span><span class="co">#&gt; 8  POINT (616.2549 442.3586)    20.443667     20.443667      41.677370</span></span>
+<span><span class="co">#&gt; 9  POINT (479.5095 469.7077)    13.484049    146.998178      13.484049</span></span>
+<span><span class="co">#&gt; 10 POINT (506.8586 469.7077)    27.121254    128.562263      27.121254</span></span>
+<span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">champ</span>, fill <span class="op">=</span> <span class="st">"grey95"</span>, colour <span class="op">=</span> <span class="st">"grey40"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">res_pts</span><span class="op">$</span><span class="va">points</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="va">distance_large</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_colour_viridis_c</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"Distance\nlargeur (m)"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Distance à la bordure (sens largeur) pour 40 points"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="distances-bordures_files/figure-html/points-1.png" class="r-plt" alt="" width="768"></p>
+</div>
+<div class="section level2">
+<h2 id="bonnes-pratiques">Bonnes pratiques<a class="anchor" aria-label="anchor" href="#bonnes-pratiques"></a>
+</h2>
+<ul>
+<li>Travaillez toujours dans un <strong>CRS projeté</strong> (mètres) :
+les CRS géographiques faussent les distances.</li>
+<li>Choisissez des seuils adaptés à l’échelle du champ et à l’effet
+étudié (haie ≈ 10–20 × hauteur ; ombrage selon la latitude).</li>
+<li>Augmentez la résolution (1–2 m) pour un résultat fin, réduisez-la
+(5–10 m) pour explorer rapidement.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="à-retenir">À retenir<a class="anchor" aria-label="anchor" href="#%C3%A0-retenir"></a>
+</h2>
 <table class="table">
 <colgroup>
-<col width="28%">
-<col width="31%">
-<col width="39%">
+<col width="62%">
+<col width="37%">
 </colgroup>
 <thead><tr class="header">
-<th>Direction</th>
-<th>Seuils (m)</th>
-<th>Signification</th>
+<th>Fonction</th>
+<th>Rôle</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Long</td>
-<td>10, 25, 50, 100</td>
-<td>Zone de bordure, proche, intermédiaire, éloigné</td>
+<td><code><a href="../reference/calculer_orientation_champ.html">calculer_orientation_champ()</a></code></td>
+<td>Angle et dimensions du champ (MBR ou PCA)</td>
 </tr>
 <tr class="even">
-<td>Large</td>
-<td>5, 15, 30, 50</td>
-<td>Zone de bordure, influence directe, transition, centre</td>
+<td><code><a href="../reference/calculer_distance_bordures_orientee.html">calculer_distance_bordures_orientee()</a></code></td>
+<td>Distances longueur / largeur / minimale</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/classifier_distances_bordures.html">classifier_distances_bordures()</a></code></td>
+<td>Classes de distance</td>
+</tr>
+<tr class="even">
+<td><code>visualiser_*()</code></td>
+<td>Cartes prêtes à l’emploi</td>
 </tr>
 </tbody>
 </table>
-<p>Adaptez selon:</p>
-<ul>
-<li>
-<strong>Haies brise-vent</strong>: L’effet s’étend typiquement à
-10-20× la hauteur de la haie</li>
-<li>
-<strong>Ombrage</strong>: Dépend de la hauteur des arbres et de la
-latitude</li>
-<li>
-<strong>Rendement</strong>: Souvent 15-30m d’effet de bordure
-mesuré</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="système-de-coordonnées">Système de coordonnées<a class="anchor" aria-label="anchor" href="#syst%C3%A8me-de-coordonn%C3%A9es"></a>
-</h3>
-<p>Utilisez toujours un CRS <strong>projeté</strong> (en mètres) pour
-des calculs de distance précis. Les CRS géographiques (lat/lon)
-donneront des résultats incorrects.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Vérifier le CRS</span></span>
-<span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crs.html" class="external-link">st_crs</a></span><span class="op">(</span><span class="va">champ</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Transformer si nécessaire (exemple: vers UTM zone 18N)</span></span>
-<span><span class="va">champ_proj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="va">champ</span>, <span class="fl">32618</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="références">Références<a class="anchor" aria-label="anchor" href="#r%C3%A9f%C3%A9rences"></a>
-</h2>
-<ul>
-<li>Jasiewicz, J., &amp; Stepinski, T. F. (2013). Geomorphons—A pattern
-recognition approach to classification and mapping of landforms.
-<em>Geomorphology</em>, 182, 147-156.</li>
-</ul>
-</div>
-<div class="section level2">
-<h2 id="aide">Aide<a class="anchor" aria-label="anchor" href="#aide"></a>
-</h2>
-<p>Pour signaler un bug ou demander une fonctionnalité: <a href="https://github.com/cedricbouffard/covariablechamps/issues" class="external-link uri">https://github.com/cedricbouffard/covariablechamps/issues</a></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

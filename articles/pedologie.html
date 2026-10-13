@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Analyse Pédologique et Séries de Sols • covariablechamps</title>
+<title>Pédologie : désagrégation des séries de sols • covariablechamps</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Analyse Pédologique et Séries de Sols">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Pédologie : désagrégation des séries de sols">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -62,7 +62,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Analyse Pédologique et Séries de Sols</h1>
+      <h1>Pédologie : désagrégation des séries de sols</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/cedricbouffard/covariablechamps/blob/main/vignettes/pedologie.Rmd" class="external-link"><code>vignettes/pedologie.Rmd</code></a></small>
@@ -75,322 +75,187 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://cedricbouffard.github.io/covariablechamps">covariablechamps</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rspatial.org/" class="external-link">terra</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+<h2 id="le-problème">Le problème<a class="anchor" aria-label="anchor" href="#le-probl%C3%A8me"></a>
 </h2>
-<p>L’analyse pédologique concerne l’étude des sols et leur distribution
-spatiale. La connaissance des séries de sols est essentielle pour:</p>
-<ul>
-<li>Évaluer le drainage et la fertilité</li>
-<li>Planifier l’irrigation</li>
-<li>Choisir les cultures adaptées</li>
-<li>Gérer les risques d’érosion</li>
-</ul>
-<p>Le package <code>covariablechamps</code> fournit la fonction
-<code><a href="../reference/proba_et_classement_serie_quota_ilr.html">proba_et_classement_serie_quota_ilr()</a></code> pour désagéger les
-données pédologiques.</p>
-</div>
-<div class="section level2">
-<h2 id="concepts-clés">Concepts clés<a class="anchor" aria-label="anchor" href="#concepts-cl%C3%A9s"></a>
-</h2>
-<div class="section level3">
-<h3 id="séries-de-sols">Séries de sols<a class="anchor" aria-label="anchor" href="#s%C3%A9ries-de-sols"></a>
-</h3>
-<p>Une <strong>série de sols</strong> est une unité de classification
-basée sur: - La texture du sol (proportions sable, limon, argile) - Le
-drainage - La topographie - Le matériau parental</p>
-</div>
-<div class="section level3">
-<h3 id="données-requises">Données requises<a class="anchor" aria-label="anchor" href="#donn%C3%A9es-requises"></a>
-</h3>
-<p>Pour utiliser <code><a href="../reference/proba_et_classement_serie_quota_ilr.html">proba_et_classement_serie_quota_ilr()</a></code>,
-vous avez besoin de:</p>
+<p>La carte pédologique du Québec décrit des <strong>polygones</strong>
+contenant chacun un mélange de <strong>séries de sols</strong> (avec un
+pourcentage et une texture). Pour l’agriculture de précision, on veut
+passer de ces polygones à une carte <strong>au pixel</strong> de la
+série dominante.</p>
+<p><code><a href="../reference/proba_et_classement_serie_quota_ilr.html">proba_et_classement_serie_quota_ilr()</a></code> combine trois
+sources :</p>
 <ol style="list-style-type: decimal">
-<li>
-<strong>Polygones des champs</strong> avec les séries de sols
-identifiées (du gouvernement du Québec)</li>
-<li>
-<strong>Table des séries</strong> avec les compositions
-granulométriques</li>
-<li>
-<strong>MNT</strong> pour intégrer l’effet topographique</li>
+<li>la <strong>texture</strong> de chaque série (sable / limon / argile)
+;</li>
+<li>le <strong>voisinage</strong> spatial (lissage gaussien) ;</li>
+<li>le <strong>MNT</strong> (les sols fins sont plus probables dans les
+bas de pente).</li>
 </ol>
-</div>
+<p>Le classement final respecte les <strong>proportions</strong> (quota)
+de chaque polygone, via une comparaison en coordonnées ILR.</p>
 </div>
 <div class="section level2">
-<h2 id="chargement-du-champ-m2">Chargement du champ M2<a class="anchor" aria-label="anchor" href="#chargement-du-champ-m2"></a>
+<h2 id="exemple-synthétique">Exemple synthétique<a class="anchor" aria-label="anchor" href="#exemple-synth%C3%A9tique"></a>
 </h2>
-<p>Le package inclut un champ d’exemple (<code>M2</code>) situé au
-Québec.</p>
+<p>On crée deux parcelles voisines, chacune composée de deux séries, un
+MNT en pente douce, et la table des séries.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">champ</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"M2.shp"</span>, package <span class="op">=</span> <span class="st">"covariablechamps"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Reading layer `M2' from data source </span></span>
-<span><span class="co">#&gt;   `/home/runner/work/_temp/Library/covariablechamps/extdata/M2.shp' </span></span>
-<span><span class="co">#&gt;   using driver `ESRI Shapefile'</span></span>
-<span><span class="co">#&gt; Simple feature collection with 1 feature and 65 fields</span></span>
-<span><span class="co">#&gt; Geometry type: POLYGON</span></span>
-<span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -71.06012 ymin: 46.64605 xmax: -71.05268 ymax: 46.65118</span></span>
-<span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
+<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st.html" class="external-link">st_polygon</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">100</span>, <span class="fl">0</span>, <span class="fl">100</span>, <span class="fl">100</span>, <span class="fl">0</span>, <span class="fl">100</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>                             ncol <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st.html" class="external-link">st_polygon</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">0</span>, <span class="fl">200</span>, <span class="fl">0</span>, <span class="fl">200</span>, <span class="fl">100</span>, <span class="fl">100</span>, <span class="fl">100</span>, <span class="fl">100</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>                             ncol <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">polys</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/sf.html" class="external-link">st_sf</a></span><span class="op">(</span>Code.polygone <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>,</span>
+<span>               geometry <span class="op">=</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/sfc.html" class="external-link">st_sfc</a></span><span class="op">(</span><span class="va">p1</span>, <span class="va">p2</span>, crs <span class="op">=</span> <span class="fl">32618</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">champ</span>, fill <span class="op">=</span> <span class="st">"lightgreen"</span>, alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Champ M2"</span>,</span>
-<span>       subtitle <span class="op">=</span> <span class="st">"Champ d'exemple inclus dans le package"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="pedologie_files/figure-html/charger-champ-1.png" class="r-plt" alt="" width="768"></p>
-</div>
-<div class="section level2">
-<h2 id="workflow-de-désagrégation-des-sols">Workflow de désagrégation des sols<a class="anchor" aria-label="anchor" href="#workflow-de-d%C3%A9sagr%C3%A9gation-des-sols"></a>
-</h2>
-<p><strong>Note</strong>: Les opérations ci-dessous nécessitent des
-données pédologiques réelles (polygones de séries de sols du
-gouvernement).</p>
-<div class="section level3">
-<h3 id="préparer-les-données">Préparer les données<a class="anchor" aria-label="anchor" href="#pr%C3%A9parer-les-donn%C3%A9es"></a>
-</h3>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 1. Charger les polygones de sols (source: gouvernement du Québec)</span></span>
-<span><span class="va">polygones_sols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="st">"sols_poly.shp"</span><span class="op">)</span></span>
+<span><span class="va">mnt</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span>xmin <span class="op">=</span> <span class="fl">0</span>, xmax <span class="op">=</span> <span class="fl">200</span>, ymin <span class="op">=</span> <span class="fl">0</span>, ymax <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>                   resolution <span class="op">=</span> <span class="fl">10</span>, crs <span class="op">=</span> <span class="st">"EPSG:32618"</span><span class="op">)</span></span>
+<span><span class="va">xy</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/xyCellFrom.html" class="external-link">xyFromCell</a></span><span class="op">(</span><span class="va">mnt</span>, <span class="fl">1</span><span class="op">:</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">ncell</a></span><span class="op">(</span><span class="va">mnt</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">mnt</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fl">30</span> <span class="op">+</span> <span class="va">xy</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">/</span> <span class="fl">5</span> <span class="op">+</span> <span class="fl">3</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">xy</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">/</span> <span class="fl">30</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Table des séries avec composition granulométrique</span></span>
-<span><span class="va">table_series</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"table_sols.csv"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 3. Vérifier la concordance</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">polygones_sols</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">table_series</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="table-des-séries-de-sols">Table des séries de sols<a class="anchor" aria-label="anchor" href="#table-des-s%C3%A9ries-de-sols"></a>
-</h3>
-<p>La table des séries doit contenir:</p>
-<table class="table">
-<thead><tr class="header">
-<th>Colonne</th>
-<th>Description</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>Code.polygone</code></td>
-<td>Identifiant reliant à polygones_sols</td>
-</tr>
-<tr class="even">
-<td><code>Composante</code></td>
-<td>Nom de la série de sols</td>
-</tr>
-<tr class="odd">
-<td><code>Pourcentage</code></td>
-<td>Proportion de la série dans le polygone</td>
-</tr>
-<tr class="even">
-<td><code>Sable</code></td>
-<td>Pourcentage de sable (0-100)</td>
-</tr>
-<tr class="odd">
-<td><code>Limon</code></td>
-<td>Pourcentage de limon (0-100)</td>
-</tr>
-<tr class="even">
-<td><code>Argile</code></td>
-<td>Pourcentage d’argile (0-100)</td>
-</tr>
-</tbody>
-</table>
-<p>Exemple:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">table_series</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  Code.polygone <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
-<span>  Composante <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Soulange"</span>, <span class="st">"Kamouraska"</span>, <span class="st">"Saint-André"</span><span class="op">)</span>,</span>
-<span>  Pourcentage <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">60</span>, <span class="fl">75</span>, <span class="fl">45</span><span class="op">)</span>,</span>
-<span>  Sable <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">45</span>, <span class="fl">55</span><span class="op">)</span>,</span>
-<span>  Limon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">45</span>, <span class="fl">35</span>, <span class="fl">30</span><span class="op">)</span>,</span>
-<span>  Argile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">25</span>, <span class="fl">20</span>, <span class="fl">15</span><span class="op">)</span></span>
+<span><span class="va">table_series</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Code.polygone <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"B"</span><span class="op">)</span>,</span>
+<span>  Composante    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Soulange"</span>, <span class="st">"Kamouraska"</span>, <span class="st">"Soulange"</span>, <span class="st">"Kamouraska"</span><span class="op">)</span>,</span>
+<span>  Pourcentage   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">60</span>, <span class="fl">40</span>, <span class="fl">30</span>, <span class="fl">70</span><span class="op">)</span>,</span>
+<span>  Sable  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.55</span>, <span class="fl">0.20</span>, <span class="fl">0.55</span>, <span class="fl">0.20</span><span class="op">)</span>,</span>
+<span>  Limon  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0.40</span>, <span class="fl">0.30</span>, <span class="fl">0.40</span><span class="op">)</span>,</span>
+<span>  Argile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.15</span>, <span class="fl">0.40</span>, <span class="fl">0.15</span>, <span class="fl">0.40</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">table_series</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="triangle-textural">Triangle textural<a class="anchor" aria-label="anchor" href="#triangle-textural"></a>
-</h2>
-<p>Le triangle textural montre la classification des sols selon les
-proportions de sable, limon et argile.</p>
-<table class="table">
-<thead><tr class="header">
-<th>Texture</th>
-<th>Sable</th>
-<th>Limon</th>
-<th>Argile</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Argileuse</td>
-<td>0-45</td>
-<td>0-40</td>
-<td>55-100</td>
-</tr>
-<tr class="even">
-<td>Limoneuse</td>
-<td>0-45</td>
-<td>50-100</td>
-<td>0-55</td>
-</tr>
-<tr class="odd">
-<td>Sableuse</td>
-<td>50-100</td>
-<td>0-50</td>
-<td>0-50</td>
-</tr>
-<tr class="even">
-<td>Franco-argilo-limoneuse</td>
-<td>20-45</td>
-<td>30-50</td>
-<td>30-45</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="utilisation-des-données-gouvernementales-québec">Utilisation des données gouvernementales (Québec)<a class="anchor" aria-label="anchor" href="#utilisation-des-donn%C3%A9es-gouvernementales-qu%C3%A9bec"></a>
-</h2>
-<p>Le package facilite l’accès aux données de la couverture pédologique
-du Québec via la fonction <code><a href="../reference/telecharger_pedologie_quebec.html">telecharger_pedologie_quebec()</a></code>.
-Elle utilise <code>vsicurl</code> pour ne télécharger que les données
-nécessaires à l’emprise de votre champ.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Télécharger les polygones et préparer la table des séries</span></span>
-<span><span class="va">donnees_sol</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/telecharger_pedologie_quebec.html">telecharger_pedologie_quebec</a></span><span class="op">(</span><span class="va">champ</span><span class="op">)</span></span>
+<span><span class="va">table_series</span></span>
+<span><span class="co">#&gt;   Code.polygone Composante Pourcentage Sable Limon Argile</span></span>
+<span><span class="co">#&gt; 1             A   Soulange          60  0.55   0.3   0.15</span></span>
+<span><span class="co">#&gt; 2             A Kamouraska          40  0.20   0.4   0.40</span></span>
+<span><span class="co">#&gt; 3             B   Soulange          30  0.55   0.3   0.15</span></span>
+<span><span class="co">#&gt; 4             B Kamouraska          70  0.20   0.4   0.40</span></span>
 <span></span>
-<span><span class="va">polygones_sols</span> <span class="op">&lt;-</span> <span class="va">donnees_sol</span><span class="op">$</span><span class="va">polygones</span></span>
-<span><span class="va">table_series</span> <span class="op">&lt;-</span> <span class="va">donnees_sol</span><span class="op">$</span><span class="va">table_series</span></span></code></pre></div>
+<span><span class="co"># Composition granulométrique des séries</span></span>
+<span><span class="va">ser</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">table_series</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Composante"</span>, <span class="st">"Sable"</span>, <span class="st">"Limon"</span>, <span class="st">"Argile"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">ser_long</span> <span class="op">&lt;-</span> <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">pivot_longer</a></span><span class="op">(</span><span class="va">ser</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Sable"</span>, <span class="st">"Limon"</span>, <span class="st">"Argile"</span><span class="op">)</span>,</span>
+<span>                                names_to <span class="op">=</span> <span class="st">"fraction"</span>, values_to <span class="op">=</span> <span class="st">"proportion"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">ser_long</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">Composante</span>, <span class="va">proportion</span>, fill <span class="op">=</span> <span class="va">fraction</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_bar.html" class="external-link">geom_col</a></span><span class="op">(</span>position <span class="op">=</span> <span class="st">"dodge"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_fill_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Sable <span class="op">=</span> <span class="st">"gold"</span>, Limon <span class="op">=</span> <span class="st">"tan3"</span>,</span>
+<span>                               Argile <span class="op">=</span> <span class="st">"sienna4"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Texture des séries de sols"</span>, x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="st">"Proportion"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="pedologie_files/figure-html/donnees-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="calcul-de-la-désagrégation">Calcul de la désagrégation<a class="anchor" aria-label="anchor" href="#calcul-de-la-d%C3%A9sagr%C3%A9gation"></a>
+<h2 id="désagrégation">Désagrégation<a class="anchor" aria-label="anchor" href="#d%C3%A9sagr%C3%A9gation"></a>
 </h2>
-<p>La fonction <code><a href="../reference/proba_et_classement_serie_quota_ilr.html">proba_et_classement_serie_quota_ilr()</a></code>
-effectue la désagrégation:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proba_et_classement_serie_quota_ilr.html">proba_et_classement_serie_quota_ilr</a></span><span class="op">(</span></span>
+<span>  polygones_sf <span class="op">=</span> <span class="va">polys</span>,</span>
+<span>  table_series <span class="op">=</span> <span class="va">table_series</span>,</span>
+<span>  mnt <span class="op">=</span> <span class="va">mnt</span>,</span>
+<span>  grid_m <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  sigma_voisin <span class="op">=</span> <span class="fl">15</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  progress <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Probabilité d'appartenance à chaque série</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">prob</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fl">100</span>, <span class="st">"Blues"</span><span class="op">)</span>,</span>
+<span>            main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"P(Soulange)"</span>, <span class="st">"P(Kamouraska)"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="pedologie_files/figure-html/desagregation-1.png" class="r-plt" alt="" width="672"></p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">closest_label</span>, main <span class="op">=</span> <span class="st">"Série dominante"</span>,</span>
+<span>            col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sandybrown"</span>, <span class="st">"steelblue"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">id_r</span>, main <span class="op">=</span> <span class="st">"Parcelle (polygone)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="pedologie_files/figure-html/classification-1.png" class="r-plt" alt="" width="672"></p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Vérifier que les quotas respectent les proportions de la table</span></span>
+<span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">closest_label</span><span class="op">)</span>, useNA <span class="op">=</span> <span class="st">"no"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/math-generics.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/proportions.html" class="external-link">prop.table</a></span><span class="op">(</span><span class="va">tab</span>, margin <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  1  2 </span></span>
+<span><span class="co">#&gt; 55 45</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/barplot.html" class="external-link">barplot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/proportions.html" class="external-link">prop.table</a></span><span class="op">(</span><span class="va">tab</span><span class="op">)</span> <span class="op">*</span> <span class="fl">100</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sandybrown"</span>, <span class="st">"steelblue"</span><span class="op">)</span>,</span>
+<span>        ylab <span class="op">=</span> <span class="st">"% des pixels"</span>, las <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>        main <span class="op">=</span> <span class="st">"Part de chaque série dominante"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="pedologie_files/figure-html/proportions-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level2">
+<h2 id="interprétation">Interprétation<a class="anchor" aria-label="anchor" href="#interpr%C3%A9tation"></a>
+</h2>
+<ul>
+<li>La <strong>série dominante</strong> (<code>closest_label</code>)
+donne la carte finale.</li>
+<li>Les couches <code>prob</code> quantifient l’incertitude : une
+probabilité proche de 0,5 signale une transition.</li>
+<li>Le paramètre <code>alpha_voisin</code> contrôle l’adhérence spatiale
+; <code>beta_mnt</code> l’influence du relief.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="données-réelles-québec">Données réelles (Québec)<a class="anchor" aria-label="anchor" href="#donn%C3%A9es-r%C3%A9elles-qu%C3%A9bec"></a>
+</h2>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Charger le MNT (via LiDAR)</span></span>
+<code class="sourceCode R"><span><span class="va">champ</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="st">"mon_champ.shp"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 1. Télécharger les polygones pédologiques + la table des séries</span></span>
+<span><span class="va">pedo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/telecharger_pedologie_quebec.html">telecharger_pedologie_quebec</a></span><span class="op">(</span><span class="va">champ</span><span class="op">)</span></span>
+<span><span class="va">polys</span>        <span class="op">&lt;-</span> <span class="va">pedo</span><span class="op">$</span><span class="va">polygones</span></span>
+<span><span class="va">table_series</span> <span class="op">&lt;-</span> <span class="va">pedo</span><span class="op">$</span><span class="va">table_series</span></span>
+<span></span>
+<span><span class="co"># 2. Récupérer un MNT LiDAR</span></span>
 <span><span class="va">mnt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/telecharger_lidar.html">telecharger_lidar</a></span><span class="op">(</span><span class="va">champ</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Effectuer la désagrégation</span></span>
-<span><span class="va">resultat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proba_et_classement_serie_quota_ilr.html">proba_et_classement_serie_quota_ilr</a></span><span class="op">(</span></span>
-<span>  polygones_sf <span class="op">=</span> <span class="va">polygones_sols</span>,</span>
+<span><span class="co"># 3. Désagréger</span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proba_et_classement_serie_quota_ilr.html">proba_et_classement_serie_quota_ilr</a></span><span class="op">(</span></span>
+<span>  polygones_sf <span class="op">=</span> <span class="va">polys</span>,</span>
 <span>  table_series <span class="op">=</span> <span class="va">table_series</span>,</span>
 <span>  mnt <span class="op">=</span> <span class="va">mnt</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="paramètres-de-la-fonction">Paramètres de la fonction<a class="anchor" aria-label="anchor" href="#param%C3%A8tres-de-la-fonction"></a>
-</h3>
+</div>
+<div class="section level2">
+<h2 id="paramètres-principaux">Paramètres principaux<a class="anchor" aria-label="anchor" href="#param%C3%A8tres-principaux"></a>
+</h2>
 <table class="table">
 <thead><tr class="header">
 <th>Paramètre</th>
-<th>Description</th>
-<th>Valeur par défaut</th>
+<th>Rôle</th>
+<th>Défaut</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td><code>grid_m</code></td>
-<td>Résolution de la grille (m)</td>
+<td>Résolution de la grille de calcul (m)</td>
 <td>20</td>
 </tr>
 <tr class="even">
 <td><code>sigma_voisin</code></td>
-<td>Écart-type du noyau gaussien (m)</td>
+<td>Portée du lissage de voisinage (m)</td>
 <td>60</td>
 </tr>
 <tr class="odd">
 <td><code>alpha_voisin</code></td>
-<td>Pondération de similarité de voisinage</td>
+<td>Poids de la similarité de voisinage</td>
 <td>8</td>
 </tr>
 <tr class="even">
 <td><code>beta_mnt</code></td>
-<td>Pondération de l’effet MNT</td>
+<td>Poids de l’effet du MNT</td>
 <td>0.2</td>
 </tr>
 <tr class="odd">
 <td><code>lambda_base</code></td>
-<td>Pondération de la probabilité de base</td>
+<td>Poids de la probabilité de base</td>
 <td>0.25</td>
 </tr>
 </tbody>
 </table>
 </div>
-</div>
 <div class="section level2">
-<h2 id="interprétation-des-résultats">Interprétation des résultats<a class="anchor" aria-label="anchor" href="#interpr%C3%A9tation-des-r%C3%A9sultats"></a>
+<h2 id="à-retenir">À retenir<a class="anchor" aria-label="anchor" href="#%C3%A0-retenir"></a>
 </h2>
-<div class="section level3">
-<h3 id="raster-de-probabilités">Raster de probabilités<a class="anchor" aria-label="anchor" href="#raster-de-probabilit%C3%A9s"></a>
-</h3>
-<p>Chaque couche du raster <code>prob</code> représente la probabilité
-d’appartenance à une série:</p>
-<ul>
-<li>Valeurs proches de 1 = forte probabilité</li>
-<li>Valeurs proches de 0 = faible probabilité</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="classification-finale">Classification finale<a class="anchor" aria-label="anchor" href="#classification-finale"></a>
-</h3>
-<p>Le raster <code>closest_label</code> assigne chaque pixel à la série
-la plus probable.</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="applications-agricoles">Applications agricoles<a class="anchor" aria-label="anchor" href="#applications-agricoles"></a>
-</h2>
-<div class="section level3">
-<h3 id="drainage">drainage<a class="anchor" aria-label="anchor" href="#drainage"></a>
-</h3>
-<table class="table">
-<thead><tr class="header">
-<th>Série</th>
-<th>drainage</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Soulange</td>
-<td>Bon</td>
-</tr>
-<tr class="even">
-<td>Kamouraska</td>
-<td>Modéré imparfait</td>
-</tr>
-<tr class="odd">
-<td>Saint-André</td>
-<td>Bon à modéré</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="aptitudes-culturales">Aptitudes culturales<a class="anchor" aria-label="anchor" href="#aptitudes-culturales"></a>
-</h3>
-<ul>
-<li>Séries bien drainées: cultures sensibles au froid</li>
-<li>Séries à drainage modéré: pacage, forêts</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="gestion-de-leau">Gestion de l’eau<a class="anchor" aria-label="anchor" href="#gestion-de-leau"></a>
-</h3>
-<ul>
-<li>Identifier les zones à risque de saturation</li>
-<li>Planifier les systèmes de drainage</li>
-</ul>
-</div>
-</div>
-<div class="section level2">
-<h2 id="références">Références<a class="anchor" aria-label="anchor" href="#r%C3%A9f%C3%A9rences"></a>
-</h2>
-<ul>
-<li>Commission de protection des terres agricoles du Québec (CPTAQ)</li>
-<li>Agence de développement du Canada (AAFC) - Bases de données des
-sols</li>
-</ul>
+<p><code><a href="../reference/proba_et_classement_serie_quota_ilr.html">proba_et_classement_serie_quota_ilr()</a></code> transforme des
+polygones de sols hétérogènes en une carte au pixel cohérente avec la
+texture, le voisinage et le relief, tout en respectant les proportions
+déclarées.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
